@@ -77,17 +77,3 @@ class Character:
                 risk=0.30,
             ),
         )
-
-    @classmethod
-    def opportunistic(cls) -> "Character":
-        """Create a character focused on wealth with moderate risk."""
-        return cls(
-            character_type=CharacterType.OPPORTUNIST,
-            utility_weights=UtilityWeights(
-                wealth=0.70,
-                sustainability=0.10,
-                trust=0.05,
-                compliance=0.00,
-                risk=0.15,
-            ),
-        )

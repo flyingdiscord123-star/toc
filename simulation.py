@@ -34,6 +34,10 @@ from environment.environment import Environment
 from environment.resource_model import LinearResourceModel
 from environment.resource_pool import ResourcePool
 from governance.engine import RuleEngine
+from governance.mechanisms import (
+    GovernanceMechanismRegistry,
+    QuotaMechanism,
+)
 from governance.registry import RuleRegistry
 from governance.rules.quota_rule import QuotaRule
 from learning.factory import LearningFactory
@@ -71,6 +75,7 @@ class Simulation:
         self._scheduler: SequentialScheduler | None = None
         self._rule_registry: RuleRegistry | None = None
         self._rule_engine: RuleEngine | None = None
+        self._mechanism_registry: GovernanceMechanismRegistry | None = None
         self._trust_matrix: TrustMatrix | None = None
         self._trust_updater: LinearTrustUpdate | None = None
         self._trust_engine: TrustEngine | None = None
@@ -103,10 +108,19 @@ class Simulation:
         self._scheduler = SequentialScheduler()
 
         self._rule_registry = RuleRegistry()
-        self._rule_registry.register(
-            QuotaRule(maximum_extraction=20.0)
-        )
+        governance_config = self.config.governance
+        if governance_config.quota_enabled:
+            self._rule_registry.register(
+                QuotaRule(
+                    maximum_extraction=governance_config.quota_limit
+                )
+            )
         self._rule_engine = RuleEngine(self._rule_registry)
+        self._mechanism_registry = GovernanceMechanismRegistry()
+        if governance_config.quota_enabled:
+            self._mechanism_registry.register(
+                QuotaMechanism(self._rule_engine)
+            )
 
         self._trust_matrix = TrustMatrix()
         self._trust_updater = LinearTrustUpdate()
@@ -122,7 +136,7 @@ class Simulation:
             agents=self._agents,
             scheduler=self._scheduler,
             observation_builder=self._observation_builder,
-            rule_engine=self._rule_engine,
+            mechanism_registry=self._mechanism_registry,
             trust_engine=self._trust_engine,
             metrics_collector=self._metrics_collector,
         )
@@ -177,10 +191,9 @@ class Simulation:
         """Choose an agent character deterministically from configured shares."""
         config = self.config.agents
         population = (
-            (CharacterType.GREEDY, config.percentage_greedy),
-            (CharacterType.COOPERATIVE, config.percentage_cooperative),
-            (CharacterType.RISK_AVERSE, config.percentage_risk_averse),
-            (CharacterType.OPPORTUNIST, config.percentage_opportunist),
+            (CharacterType.GREEDY, config.greedy_percentage),
+            (CharacterType.COOPERATIVE, config.cooperative_percentage),
+            (CharacterType.RISK_AVERSE, config.risk_averse_percentage),
         )
         position = (agent_id + 0.5) * 100 / config.num_agents
         cumulative = 0.0
@@ -190,7 +203,7 @@ class Simulation:
             if position <= cumulative:
                 return character_type
 
-        return CharacterType.OPPORTUNIST
+        return CharacterType.RISK_AVERSE
 
     @staticmethod
     def _character_for(character_type: CharacterType) -> Character:
@@ -199,6 +212,5 @@ class Simulation:
             CharacterType.GREEDY: Character.greedy,
             CharacterType.COOPERATIVE: Character.cooperative,
             CharacterType.RISK_AVERSE: Character.risk_averse,
-            CharacterType.OPPORTUNIST: Character.opportunistic,
         }
         return mapping[character_type]()

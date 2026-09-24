@@ -50,10 +50,9 @@ DEFAULT_NETWORK = NetworkConfig(
 
 DEFAULT_AGENTS = AgentConfig(
     num_agents=100,
-    percentage_greedy=25.0,
-    percentage_cooperative=25.0,
-    percentage_risk_averse=25.0,
-    percentage_opportunist=25.0,
+    greedy_percentage=33.3333333333,
+    cooperative_percentage=33.3333333333,
+    risk_averse_percentage=33.3333333334,
 )
 
 

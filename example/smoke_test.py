@@ -73,10 +73,9 @@ def main() -> None:
         ),
         agents=AgentConfig(
             num_agents=2,
-            percentage_greedy=100,
-            percentage_cooperative=0,
-            percentage_risk_averse=0,
-            percentage_opportunist=0,
+            greedy_percentage=100,
+            cooperative_percentage=0,
+            risk_averse_percentage=0,
         ),
         governance=GovernanceConfig(),
         learning=LearningConfig(

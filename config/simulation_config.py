@@ -45,7 +45,6 @@ class CharacterType(Enum):
     GREEDY = "greedy"
     COOPERATIVE = "cooperative"
     RISK_AVERSE = "risk_averse"
-    OPPORTUNIST = "opportunist"
 
 # ==========================================================
 # Environment
@@ -63,8 +62,8 @@ class EnvironmentConfig:
     rounds: int
 
     def __post_init__(self) -> None:
-        if self.initial_resources <= 0:
-            raise ValueError("initial_resources must be > 0.")
+        if self.initial_resources < 0:
+            raise ValueError("initial_resources must be >= 0.")
 
         if self.maximum_capacity <= 0:
             raise ValueError("maximum_capacity must be > 0.")
@@ -124,10 +123,9 @@ class AgentConfig:
 
     num_agents: int
 
-    percentage_greedy: float
-    percentage_cooperative: float
-    percentage_risk_averse: float
-    percentage_opportunist: float
+    greedy_percentage: float
+    cooperative_percentage: float
+    risk_averse_percentage: float
 
     def __post_init__(self) -> None:
 
@@ -135,21 +133,19 @@ class AgentConfig:
             raise ValueError("num_agents must be positive.")
 
         percentages = [
-            self.percentage_greedy,
-            self.percentage_cooperative,
-            self.percentage_risk_averse,
-            self.percentage_opportunist,
+            self.greedy_percentage,
+            self.cooperative_percentage,
+            self.risk_averse_percentage,
         ]
 
         for value in percentages:
-            if value < 0 or value > 100:
-                raise ValueError(
-                    "Percentages must lie between 0 and 100."
-                )
+            if value < 0:
+                raise ValueError("Agent percentages must be non-negative.")
 
         if abs(sum(percentages) - 100.0) > 1e-6:
             raise ValueError(
-                "Agent percentages must sum to exactly 100."
+                "greedy_percentage + cooperative_percentage + "
+                "risk_averse_percentage must equal 100."
             )
 
 
@@ -157,15 +153,64 @@ class AgentConfig:
 # Governance
 # ==========================================================
 
+@dataclass(frozen=True, slots=True)
+class QuotaConfig:
+    """Researcher-selected configuration for the quota institution."""
+
+    enabled: bool = True
+    maximum_extraction: float = 20.0
+
+
+@dataclass(frozen=True, slots=True)
+class TaxConfig:
+    """Researcher-selected tax settings reserved for future governance."""
+
+    enabled: bool = False
+    rate: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class FineConfig:
+    """Researcher-selected fine settings reserved for future governance."""
+
+    enabled: bool = False
+    amount: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class SubsidyConfig:
+    """Researcher-selected subsidy settings reserved for future governance."""
+
+    enabled: bool = False
+    rate: float = 0.0
+
+
 @dataclass(slots=True)
 class GovernanceConfig:
     """
-    Stores which governance plugins are enabled.
+    Stores the exogenous institutions selected before simulation begins.
 
-    Rules themselves are implemented elsewhere.
+    Governance is exogenous: these institutional parameters are selected by
+    the researcher before a simulation begins.
+
+    ``enabled_rules`` is retained for compatibility with older callers.
     """
 
     enabled_rules: List[str] = field(default_factory=list)
+    quota_enabled: bool = True
+    quota_limit: float = 20.0
+    tax_enabled: bool = False
+    tax_rate: float = 0.0
+    fine_enabled: bool = False
+    fine_amount: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.quota_limit < 0:
+            raise ValueError("quota_limit must be >= 0.")
+        if not 0.0 <= self.tax_rate <= 1.0:
+            raise ValueError("tax_rate must be between 0 and 1.")
+        if self.fine_amount < 0:
+            raise ValueError("fine_amount must be >= 0.")
 
 
 # ==========================================================

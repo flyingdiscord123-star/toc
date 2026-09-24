@@ -11,11 +11,11 @@ resource regeneration logic, or governance rules.
 """
 
 from __future__ import annotations
+from accounting.economic_outcome import EconomicOutcome
 from agents import observation
 from trust.trust_engine import TrustEngine
-from governance.engine import RuleEngine
-from governance.registry import RuleRegistry
-from governance.rules.quota_rule import QuotaRule
+from governance.action_outcome import ActionOutcome
+from governance.mechanisms.registry import GovernanceMechanismRegistry
 from agents.agent import Agent
 from agents.experience import AgentExperience
 from agents.observation import AgentObservation
@@ -24,8 +24,6 @@ from environment.environment import Environment
 from .result import SimulationResult
 from .scheduler import Scheduler
 from network.observer import ObservationBuilder
-from governance.context import RuleContext
-from governance.engine import RuleEngine
 from metrics.collector import MetricsCollector
 from metrics.round_metrics import RoundMetrics
 class Simulator:
@@ -43,7 +41,7 @@ class Simulator:
         agents: list[Agent],
         scheduler: Scheduler,
         observation_builder: ObservationBuilder,
-        rule_engine: RuleEngine,
+        mechanism_registry: GovernanceMechanismRegistry,
         trust_engine: TrustEngine,
         metrics_collector: MetricsCollector,
     ) -> None:
@@ -52,7 +50,7 @@ class Simulator:
         self._agents = agents
         self._scheduler = scheduler
         self._observation_builder = observation_builder
-        self._rule_engine = rule_engine
+        self._mechanism_registry = mechanism_registry
         self._trust_engine = trust_engine
         self._metrics_collector = metrics_collector
 
@@ -64,114 +62,112 @@ class Simulator:
         return self._config
 
     def run(self) -> SimulationResult:
-        """
-        Execute the simulation.
-
-        Returns
-        -------
-        SimulationResult
-            Summary of the completed simulation.
-        """
-
+        """Execute the simulation and return its completed result."""
         rounds = self._config.environment.rounds
 
         for _ in range(rounds):
-
             violations = 0
             successful_extractions = 0
-
             environment_snapshot = self._environment.snapshot()
-
             ordered_agents = self._scheduler.order(self._agents)
 
             for agent in ordered_agents:
-
                 observation = self._observation_builder.build(
-                agent_id=agent.id,
-                environment=environment_snapshot,
-        )
-
-                agent.observe(observation)
-                
-
-                
-                action = agent.act(observation)
-                context = RuleContext(
-                    agent=agent,
-                    action=action,
+                    agent_id=agent.id,
                     environment=environment_snapshot,
                 )
-                rule_result = self._rule_engine.evaluate(context)
-                
-                if not rule_result.allowed:
+                agent.observe(observation)
+                action = agent.act(observation)
+                action_outcome = ActionOutcome(
+                    requested_extraction=action.extraction_amount,
+                    approved_extraction=action.extraction_amount,
+                    net_resources_received=action.extraction_amount,
+                    tax_paid=0.0,
+                    fine_paid=0.0,
+                    subsidy_received=0.0,
+                    compliant=True,
+                    violation_reason=None,
+                )
+                action_outcome = self._mechanism_registry.apply_all(
+                    action=action,
+                    observation=observation,
+                    environment=environment_snapshot,
+                    outcome=action_outcome,
+                )
+                extracted = self._environment.resource_pool.extract(
+                    action_outcome.approved_extraction
+                )
+                action_outcome = ActionOutcome(
+                    requested_extraction=action_outcome.requested_extraction,
+                    approved_extraction=action_outcome.approved_extraction,
+                    net_resources_received=extracted,
+                    tax_paid=action_outcome.tax_paid,
+                    fine_paid=action_outcome.fine_paid,
+                    subsidy_received=action_outcome.subsidy_received,
+                    compliant=action_outcome.compliant,
+                    violation_reason=action_outcome.violation_reason,
+                )
+
+                if action_outcome.net_resources_received > 0.0:
+                    successful_extractions += 1
+                if not action_outcome.compliant:
                     violations += 1
-                    extracted = 0.0
 
-                else:
-                    extracted = self._environment.resource_pool.extract(
-                    action.extraction_amount,
+                economic_outcome = EconomicOutcome.from_action_outcome(
+                    action_outcome
                 )
-                    if extracted > 0.0:
-                        successful_extractions += 1
-
-
-                
-
-                agent.receive_resources(extracted)
+                agent.state.wealth += economic_outcome.net_gain
                 next_snapshot = self._environment.snapshot()
-
                 next_observation = self._observation_builder.build(
-                agent_id=agent.id,
-                environment=next_snapshot,
+                    agent_id=agent.id,
+                    environment=next_snapshot,
                 )
-
                 experience = AgentExperience(
                     observation=observation,
                     action=action,
                     next_observation=next_observation,
                     outcome={
-                        "resources_extracted": extracted,
+                        "action_outcome": action_outcome,
+                        "economic_outcome": economic_outcome,
                     },
                 )
-
                 agent.remember(experience)
                 self._trust_engine.update(
-                source=agent.id,
-                target=agent.id,
-                successful_interaction=rule_result.allowed,
-            )
-
+                    source=agent.id,
+                    target=agent.id,
+                    successful_interaction=action_outcome.compliant,
+                )
                 agent.learn(experience)
 
             self._environment.step()
-
             average_wealth = sum(
                 agent.state.wealth for agent in self._agents
             ) / len(self._agents)
             total_wealth = sum(
                 agent.state.wealth for agent in self._agents
             )
-
             self._metrics_collector.record(
                 RoundMetrics(
-                round_number=self._environment.round_number,
-                resource_level=(
-                    self._environment.resource_pool.available_resources
-                ),
-                average_wealth=average_wealth,
-                total_wealth=total_wealth,
-                average_trust=self._trust_engine.average_trust(),
-                violations=violations,
-                successful_extractions=successful_extractions,
+                    round_number=self._environment.round_number,
+                    resource_level=(
+                        self._environment.resource_pool.available_resources
+                    ),
+                    average_wealth=average_wealth,
+                    total_wealth=total_wealth,
+                    average_trust=self._trust_engine.average_trust(),
+                    violations=violations,
+                    successful_extractions=successful_extractions,
                 )
             )
 
         return SimulationResult(
-        rounds_completed=self._environment.round_number,
-        final_resource_level=self._environment.resource_pool.available_resources,
-        agent_wealth={
-            agent.id: agent.state.wealth
-            for agent in self._agents
-        },
-        metrics_history=list(self._metrics_collector.history),
-)
+            rounds_completed=self._environment.round_number,
+            final_resource_level=(
+                self._environment.resource_pool.available_resources
+            ),
+            agent_wealth={
+                agent.id: agent.state.wealth
+                for agent in self._agents
+            },
+            metrics_history=list(self._metrics_collector.history),
+        )
