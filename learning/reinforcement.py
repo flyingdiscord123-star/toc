@@ -2,18 +2,15 @@
 Placeholder reinforcement learner.
 """
 
-from agents.experience import AgentExperience
-
 from .base import LearningAlgorithm
-
-Experience = AgentExperience
+from .experience import LearningExperience
 
 
 class ReinforcementLearning(LearningAlgorithm):
 
-    def learn(
+    def update(
         self,
-        experience: Experience,
+        experience: LearningExperience,
     ) -> None:
         raise NotImplementedError(
             "Reinforcement learning will be implemented later."

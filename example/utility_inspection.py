@@ -55,7 +55,8 @@ def main() -> None:
         agent_id=agent.id,
         environment=environment.snapshot(),
     )
-    candidate_amounts = UtilityMaximizationPolicy.candidate_extraction_amounts
+    policy = UtilityMaximizationPolicy()
+    candidate_amounts = policy.candidate_extraction_amounts()
     reports = utility_function.evaluate_candidates(
         observation=observation,
         candidate_extraction_amounts=candidate_amounts,

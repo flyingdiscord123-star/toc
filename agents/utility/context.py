@@ -8,6 +8,7 @@ from agents.action import AgentAction
 from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
+from economics.economic_outcome import EconomicOutcome
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,3 +19,5 @@ class UtilityContext:
     action: AgentAction
     state: AgentState
     character: Character
+
+    economic_outcome: EconomicOutcome | None = None

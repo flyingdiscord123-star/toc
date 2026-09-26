@@ -4,17 +4,14 @@ no_learning.py
 A placeholder learner that performs no updates.
 """
 
-from agents.experience import AgentExperience
-
 from .base import LearningAlgorithm
-
-Experience = AgentExperience
+from .experience import LearningExperience
 
 
 class NoLearning(LearningAlgorithm):
 
-    def learn(
+    def update(
         self,
-        experience: Experience,
+        experience: LearningExperience,
     ) -> None:
         pass

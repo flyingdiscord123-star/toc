@@ -18,7 +18,12 @@ class WealthComponent(UtilityComponent):
     ) -> float:
         """Return normalized expected net reward."""
         maximum_possible_reward = MAXIMUM_CANDIDATE_EXTRACTION
+        net_income = (
+            context.economic_outcome.net_income
+            if context.economic_outcome is not None
+            else context.action.extraction_amount
+        )
         score = (
-            context.action.extraction_amount / maximum_possible_reward
+            net_income / maximum_possible_reward
         )
         return min(max(score, 0.0), 1.0)

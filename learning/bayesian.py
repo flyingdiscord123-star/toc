@@ -2,18 +2,15 @@
 Placeholder Bayesian learner.
 """
 
-from agents.experience import AgentExperience
-
 from .base import LearningAlgorithm
-
-Experience = AgentExperience
+from .experience import LearningExperience
 
 
 class BayesianLearning(LearningAlgorithm):
 
-    def learn(
+    def update(
         self,
-        experience: Experience,
+        experience: LearningExperience,
     ) -> None:
         raise NotImplementedError(
             "Bayesian learning will be implemented later."

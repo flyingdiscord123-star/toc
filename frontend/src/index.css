@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root { font-family: "Source Sans 3", sans-serif; color: #17252a; background: #f5f7f4; font-synthesis: none; text-rendering: optimizeLegibility; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+button:disabled { cursor: wait; opacity: .7; }
+.button-primary { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; border-radius: .85rem; background: #087f8c; padding: .85rem 1.15rem; color: #fff; font-family: "DM Sans", sans-serif; font-size: .9rem; font-weight: 700; transition: transform .2s, background .2s; }
+.button-primary:hover:not(:disabled) { background: #076c77; transform: translateY(-1px); }
+.button-secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(23,37,42,.12); border-radius: .85rem; background: rgba(255,255,255,.7); padding: .85rem; color: rgba(23,37,42,.65); transition: background .2s, color .2s; }
+.button-secondary:hover { background: #fff; color: #17252a; }
+.range-input { height: 5px; width: 100%; cursor: pointer; appearance: none; border-radius: 99px; background: #dce6e1; accent-color: #087f8c; }
+.range-input::-webkit-slider-thumb { height: 17px; width: 17px; appearance: none; border: 3px solid #f5f7f4; border-radius: 50%; background: #087f8c; box-shadow: 0 2px 6px rgba(23,37,42,.22); }
+.range-input::-moz-range-thumb { height: 13px; width: 13px; border: 3px solid #f5f7f4; border-radius: 50%; background: #087f8c; box-shadow: 0 2px 6px rgba(23,37,42,.22); }

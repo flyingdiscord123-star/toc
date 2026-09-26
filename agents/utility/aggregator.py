@@ -9,6 +9,9 @@ from agents.action import AgentAction
 from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
+from config.simulation_config import GovernanceConfig
+from economics.economic_model import EconomicModel
+from economics.flat_economic_model import FlatEconomicModel
 
 from .compliance import ComplianceComponent
 from .component import UtilityComponent
@@ -32,6 +35,10 @@ class LinearUtilityFunction(UtilityFunction):
     trust: UtilityComponent = field(default_factory=TrustComponent)
     compliance: UtilityComponent = field(default_factory=ComplianceComponent)
     risk: UtilityComponent = field(default_factory=RiskComponent)
+    economic_model: EconomicModel = field(default_factory=FlatEconomicModel)
+    governance_config: GovernanceConfig = field(
+        default_factory=GovernanceConfig
+    )
 
     def evaluate(
         self,
@@ -42,13 +49,26 @@ class LinearUtilityFunction(UtilityFunction):
     ) -> float:
         """Return the weighted utility for a candidate action."""
         return self._evaluate_context(
-            UtilityContext(
-                observation=observation,
-                action=action,
-                state=state,
-                character=character,
-            )
+            observation=observation,
+            action=action,
+            state=state,
+            character=character,
         ).total_utility
+
+    def evaluate_report(
+        self,
+        observation: AgentObservation,
+        action: AgentAction,
+        state: AgentState,
+        character: Character,
+    ) -> UtilityEvaluation:
+        """Return the component breakdown for one candidate action."""
+        return self._evaluate_context(
+            observation=observation,
+            action=action,
+            state=state,
+            character=character,
+        )
 
     def evaluate_candidates(
         self,
@@ -60,23 +80,36 @@ class LinearUtilityFunction(UtilityFunction):
         """Return component reports in the order of candidate actions."""
         return [
             self._evaluate_context(
-                UtilityContext(
-                    observation=observation,
-                    action=AgentAction(
-                        extraction_amount=extraction_amount
-                    ),
-                    state=state,
-                    character=character,
-                )
+                observation=observation,
+                action=AgentAction(
+                    extraction_amount=extraction_amount
+                ),
+                state=state,
+                character=character,
             )
             for extraction_amount in candidate_extraction_amounts
         ]
 
     def _evaluate_context(
         self,
-        context: UtilityContext,
+        observation: AgentObservation,
+        action: AgentAction,
+        state: AgentState,
+        character: Character,
     ) -> UtilityEvaluation:
         """Evaluate all components for one immutable context."""
+        economic_outcome = self.economic_model.evaluate(
+            observation=observation,
+            action=action,
+            governance_config=self.governance_config,
+        )
+        context = UtilityContext(
+            observation=observation,
+            action=action,
+            state=state,
+            character=character,
+            economic_outcome=economic_outcome,
+        )
         weights = context.character.utility_weights
         wealth_score = self.wealth.evaluate(context)
         sustainability_score = self.sustainability.evaluate(context)

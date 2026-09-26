@@ -2,18 +2,15 @@
 Placeholder evolutionary learner.
 """
 
-from agents.experience import AgentExperience
-
 from .base import LearningAlgorithm
-
-Experience = AgentExperience
+from .experience import LearningExperience
 
 
 class EvolutionaryLearning(LearningAlgorithm):
 
-    def learn(
+    def update(
         self,
-        experience: Experience,
+        experience: LearningExperience,
     ) -> None:
         raise NotImplementedError(
             "Evolutionary learning will be implemented later."

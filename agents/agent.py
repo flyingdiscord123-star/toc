@@ -28,6 +28,7 @@ from .observation import AgentObservation
 from .state import AgentState
 from .utility import UtilityFunction
 from learning.base import LearningAlgorithm
+from learning.experience import LearningExperience
 
 
 class Agent:
@@ -105,6 +106,11 @@ class Agent:
         """
         return self._memory
 
+    @property
+    def utility_function(self) -> UtilityFunction:
+        """Utility function used to evaluate this agent's actions."""
+        return self._utility_function
+
     def observe(
         self,
         observation: AgentObservation,
@@ -148,13 +154,13 @@ class Agent:
 
     def learn(
         self,
-        experience: AgentExperience,
+        experience: LearningExperience,
     ) -> None:
         """
         Update the learning algorithm using a new experience.
         """
 
-        self._learning.learn(experience)
+        self._learning.update(experience)
     def receive_resources(
         self,
         amount: float,

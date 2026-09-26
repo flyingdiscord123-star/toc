@@ -8,9 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from agents.experience import AgentExperience
-
-Experience = AgentExperience
+from .experience import LearningExperience
 
 
 class LearningAlgorithm(ABC):
@@ -19,14 +17,18 @@ class LearningAlgorithm(ABC):
     """
 
     @abstractmethod
-    def learn(
+    def update(
         self,
-        experience: Experience,
+        experience: LearningExperience,
     ) -> None:
         """
         Update the internal model using one experience.
         """
         raise NotImplementedError
+
+    def learn(self, experience: LearningExperience) -> None:
+        """Backward-compatible alias for update()."""
+        self.update(experience)
 
     def reset(self) -> None:
         """

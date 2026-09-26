@@ -11,7 +11,7 @@ resource regeneration logic, or governance rules.
 """
 
 from __future__ import annotations
-from accounting.economic_outcome import EconomicOutcome
+from economics.economic_outcome import EconomicOutcome
 from agents import observation
 from trust.trust_engine import TrustEngine
 from governance.action_outcome import ActionOutcome
@@ -26,6 +26,7 @@ from .scheduler import Scheduler
 from network.observer import ObservationBuilder
 from metrics.collector import MetricsCollector
 from metrics.round_metrics import RoundMetrics
+from learning.experience import LearningExperience
 class Simulator:
     """
     Coordinates the execution of a simulation.
@@ -83,7 +84,6 @@ class Simulator:
                     approved_extraction=action.extraction_amount,
                     net_resources_received=action.extraction_amount,
                     tax_paid=0.0,
-                    fine_paid=0.0,
                     subsidy_received=0.0,
                     compliant=True,
                     violation_reason=None,
@@ -102,7 +102,6 @@ class Simulator:
                     approved_extraction=action_outcome.approved_extraction,
                     net_resources_received=extracted,
                     tax_paid=action_outcome.tax_paid,
-                    fine_paid=action_outcome.fine_paid,
                     subsidy_received=action_outcome.subsidy_received,
                     compliant=action_outcome.compliant,
                     violation_reason=action_outcome.violation_reason,
@@ -116,7 +115,29 @@ class Simulator:
                 economic_outcome = EconomicOutcome.from_action_outcome(
                     action_outcome
                 )
-                agent.state.wealth += economic_outcome.net_gain
+                agent.state.wealth += economic_outcome.net_income
+                utility_report = agent.utility_function.evaluate_report(
+                    observation=observation,
+                    action=action,
+                    state=agent.state,
+                    character=agent.character,
+                )
+                learning_experience = LearningExperience(
+                    observation=observation,
+                    chosen_action=action,
+                    economic_outcome=economic_outcome,
+                    utility_component_scores=(
+                        ("wealth", utility_report.wealth),
+                        (
+                            "sustainability",
+                            utility_report.sustainability,
+                        ),
+                        ("trust", utility_report.trust),
+                        ("compliance", utility_report.compliance),
+                        ("risk", utility_report.risk),
+                    ),
+                    total_utility=utility_report.total_utility,
+                )
                 next_snapshot = self._environment.snapshot()
                 next_observation = self._observation_builder.build(
                     agent_id=agent.id,
@@ -137,7 +158,7 @@ class Simulator:
                     target=agent.id,
                     successful_interaction=action_outcome.compliant,
                 )
-                agent.learn(experience)
+                agent.learn(learning_experience)
 
             self._environment.step()
             average_wealth = sum(

@@ -7,6 +7,7 @@ from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
 from agents.utility import UtilityFunction
+from config.simulation_config import DecisionConfig
 
 from .base import DecisionPolicy
 
@@ -14,7 +15,26 @@ from .base import DecisionPolicy
 class UtilityMaximizationPolicy(DecisionPolicy):
     """Choose the candidate action with the highest utility."""
 
-    candidate_extraction_amounts = [0, 2, 4, 6, 8, 10]
+    def __init__(
+        self,
+        decision_config: DecisionConfig | None = None,
+    ) -> None:
+        self._decision_config = decision_config or DecisionConfig()
+
+    def candidate_extraction_amounts(self) -> list[float]:
+        """Generate the configured candidate extraction amounts."""
+        config = self._decision_config
+        candidates: list[float] = []
+        current = config.minimum_extraction
+
+        while current <= config.maximum_extraction + 1e-9:
+            candidates.append(current)
+            current += config.step_size
+
+        if candidates[-1] != config.maximum_extraction:
+            candidates.append(config.maximum_extraction)
+
+        return candidates
 
     def decide(
         self,
@@ -29,9 +49,8 @@ class UtilityMaximizationPolicy(DecisionPolicy):
                 "UtilityMaximizationPolicy requires a utility function."
             )
 
-        best_action = AgentAction(
-            extraction_amount=self.candidate_extraction_amounts[0]
-        )
+        candidate_amounts = self.candidate_extraction_amounts()
+        best_action = AgentAction(extraction_amount=candidate_amounts[0])
         best_utility = utility_function.evaluate(
             observation=observation,
             action=best_action,
@@ -39,7 +58,7 @@ class UtilityMaximizationPolicy(DecisionPolicy):
             character=character,
         )
 
-        for extraction_amount in self.candidate_extraction_amounts[1:]:
+        for extraction_amount in candidate_amounts[1:]:
             action = AgentAction(extraction_amount=extraction_amount)
             utility = utility_function.evaluate(
                 observation=observation,

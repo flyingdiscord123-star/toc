@@ -115,6 +115,23 @@ class NetworkConfig:
 # Agent Population
 # ==========================================================
 
+@dataclass(frozen=True, slots=True)
+class DecisionConfig:
+    """Researcher-selected candidate action space for an experiment."""
+
+    minimum_extraction: float = 0.0
+    maximum_extraction: float = 10.0
+    step_size: float = 2.0
+
+    def __post_init__(self) -> None:
+        if self.minimum_extraction > self.maximum_extraction:
+            raise ValueError(
+                "minimum_extraction must be <= maximum_extraction."
+            )
+        if self.step_size <= 0:
+            raise ValueError("step_size must be > 0.")
+
+
 @dataclass(slots=True)
 class AgentConfig:
     """
@@ -170,14 +187,6 @@ class TaxConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class FineConfig:
-    """Researcher-selected fine settings reserved for future governance."""
-
-    enabled: bool = False
-    amount: float = 0.0
-
-
-@dataclass(frozen=True, slots=True)
 class SubsidyConfig:
     """Researcher-selected subsidy settings reserved for future governance."""
 
@@ -201,16 +210,12 @@ class GovernanceConfig:
     quota_limit: float = 20.0
     tax_enabled: bool = False
     tax_rate: float = 0.0
-    fine_enabled: bool = False
-    fine_amount: float = 0.0
 
     def __post_init__(self) -> None:
         if self.quota_limit < 0:
             raise ValueError("quota_limit must be >= 0.")
         if not 0.0 <= self.tax_rate <= 1.0:
             raise ValueError("tax_rate must be between 0 and 1.")
-        if self.fine_amount < 0:
-            raise ValueError("fine_amount must be >= 0.")
 
 
 # ==========================================================
@@ -251,3 +256,4 @@ class SimulationConfig:
     agents: AgentConfig
     governance: GovernanceConfig
     learning: LearningConfig
+    decision: DecisionConfig = field(default_factory=DecisionConfig)
