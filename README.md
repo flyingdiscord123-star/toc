@@ -204,29 +204,45 @@ simulation.py
 
 # Running the Simulator
 
-Create a virtual environment
+Create and activate a virtual environment (PowerShell)
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-Install dependencies
+Install backend dependencies
 
-```bash
-pip install networkx
+```powershell
+python -m pip install -r requirements.txt
 ```
 
-Run the integration simulation
+Start the backend API from the repository root
 
-```bash
-python3 -m example.integration_test
+```powershell
+python -m uvicorn api.main:app --reload --port 8000
+```
+
+The API is available at `http://localhost:8000`; interactive API documentation is at `http://localhost:8000/docs`.
+
+In a second terminal, start the frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Run the integration simulation directly
+
+```powershell
+python -m example.integration_test
 ```
 
 Run the smoke test
 
-```bash
-python3 -m example.smoke_test
+```powershell
+python -m example.smoke_test
 ```
 
 Run the architecture test

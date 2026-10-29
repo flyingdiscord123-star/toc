@@ -6,7 +6,7 @@ import { MetricCard } from "../ui/MetricCard";
 
 export function ResultsPanel({ result }: { result: SimulationResult | null }) {
   if (!result) {
-    return <div className="flex min-h-[520px] flex-col items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-white/45 p-8 text-center"><span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal/10 text-teal"><LineChartIcon size={25} /></span><h2 className="font-display text-xl font-bold">Your results will appear here</h2><p className="mt-2 max-w-sm text-sm leading-6 text-ink/50">Configure the experimental conditions, then run a mocked simulation to inspect resource sustainability and agent wealth.</p></div>;
+    return <div className="flex min-h-[520px] flex-col items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-white/45 p-8 text-center"><span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal/10 text-teal"><LineChartIcon size={25} /></span><h2 className="font-display text-xl font-bold">Your results will appear here</h2><p className="mt-2 max-w-sm text-sm leading-6 text-ink/50">Configure the experimental conditions, then run a simulation to inspect resource sustainability and agent wealth.</p></div>;
   }
   return (
     <div className="space-y-5">
@@ -20,7 +20,7 @@ export function ResultsPanel({ result }: { result: SimulationResult | null }) {
         <ChartCard title="Resource vs time" detail="Available commons resource by round"><Chart data={result.chartData} dataKey="resourceLevel" color="#087f8c" label="Resource" /></ChartCard>
         <ChartCard title="Average wealth" detail="Mean accumulated wealth by round"><Chart data={result.chartData} dataKey="averageWealth" color="#e9795f" label="Wealth" /></ChartCard>
       </div>
-      <div className="flex items-center gap-3 rounded-2xl border border-teal/15 bg-teal/[0.06] px-5 py-4 text-sm text-ink/70"><CheckCircle2 size={18} className="text-teal" /><span>Mock run complete at {new Date(result.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. The API adapter is ready for the FastAPI endpoint.</span></div>
+      <div className="flex items-center gap-3 rounded-2xl border border-teal/15 bg-teal/[0.06] px-5 py-4 text-sm text-ink/70"><CheckCircle2 size={18} className="text-teal" /><span>Simulation complete at {new Date(result.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span></div>
     </div>
   );
 }
