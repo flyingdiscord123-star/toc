@@ -12,9 +12,7 @@ class UtilityEvaluation:
     """Component scores and total utility for one candidate action."""
 
     action: AgentAction
-    wealth: float
+    gain: float
     sustainability: float
-    trust: float
-    compliance: float
     risk: float
     total_utility: float

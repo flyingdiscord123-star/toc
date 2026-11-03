@@ -33,8 +33,6 @@ from engine.simulator import Simulator
 from environment.environment import Environment
 from environment.resource_model import LinearResourceModel
 from environment.resource_pool import ResourcePool
-from economics.economic_model import EconomicModel
-from economics.flat_economic_model import FlatEconomicModel
 from governance.engine import RuleEngine
 from governance.mechanisms import (
     GovernanceMechanismRegistry,
@@ -82,7 +80,7 @@ class Simulation:
         self._trust_updater: LinearTrustUpdate | None = None
         self._trust_engine: TrustEngine | None = None
         self._metrics_collector: MetricsCollector | None = None
-        self._economic_model: EconomicModel | None = None
+        self._utility_function = LinearUtilityFunction()
         self._agents: list[Agent] | None = None
         self._simulator: Simulator | None = None
 
@@ -101,8 +99,6 @@ class Simulation:
             self._resource_model,
         )
         self._environment = Environment(self._resource_pool)
-        self._economic_model = FlatEconomicModel()
-
         self._graph_manager = self._create_graph()
         self._agents = self._create_agents()
         self._observation_builder = ObservationBuilder(
@@ -185,12 +181,15 @@ class Simulation:
             character=character,
             memory=AgentMemory(),
             decision_policy=UtilityMaximizationPolicy(
-                self.config.decision
+                decision_config=self.config.decision,
+                quota_limit=self.config.governance.quota_limit,
+                random_seed=(
+                    self.config.network.random_seed + agent_id
+                    if self.config.network.random_seed is not None
+                    else None
+                ),
             ),
-            utility_function=LinearUtilityFunction(
-                economic_model=self._economic_model,
-                governance_config=self.config.governance,
-            ),
+            utility_function=self._utility_function,
             learning=LearningFactory.create(
                 self.config.learning.learning_algorithm.value
             ),

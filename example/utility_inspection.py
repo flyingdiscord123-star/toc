@@ -64,15 +64,13 @@ def main() -> None:
         character=agent.character,
     )
 
-    print("Action  Wealth  Sustain  Trust  Compliance  Risk  Utility")
+    print("Action  Gain  Sustain  Risk  Utility")
     print("-" * 62)
     for report in reports:
         print(
             f"{report.action.extraction_amount:>6.0f}  "
-            f"{report.wealth:>6.2f}  "
+            f"{report.gain:>4.2f}  "
             f"{report.sustainability:>7.2f}  "
-            f"{report.trust:>5.2f}  "
-            f"{report.compliance:>10.2f}  "
             f"{report.risk:>4.2f}  "
             f"{report.total_utility:>7.2f}"
         )

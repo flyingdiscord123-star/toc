@@ -16,3 +16,6 @@ class RoundMetrics:
     average_trust: float
     violations: int
     successful_extractions: int
+    average_harvest_greedy: float = 0.0
+    average_harvest_cooperative: float = 0.0
+    average_harvest_risk_averse: float = 0.0

@@ -13,6 +13,7 @@ resource regeneration logic, or governance rules.
 from __future__ import annotations
 from economics.economic_outcome import EconomicOutcome
 from agents import observation
+from config.simulation_config import CharacterType
 from trust.trust_engine import TrustEngine
 from governance.action_outcome import ActionOutcome
 from governance.mechanisms.registry import GovernanceMechanismRegistry
@@ -69,6 +70,14 @@ class Simulator:
         for _ in range(rounds):
             violations = 0
             successful_extractions = 0
+            harvest_totals = {
+                character_type: 0.0
+                for character_type in CharacterType
+            }
+            harvest_counts = {
+                character_type: 0
+                for character_type in CharacterType
+            }
             environment_snapshot = self._environment.snapshot()
             ordered_agents = self._scheduler.order(self._agents)
 
@@ -76,6 +85,7 @@ class Simulator:
                 observation = self._observation_builder.build(
                     agent_id=agent.id,
                     environment=environment_snapshot,
+                    quota_limit=self._config.governance.quota_limit,
                 )
                 agent.observe(observation)
                 action = agent.act(observation)
@@ -109,6 +119,11 @@ class Simulator:
 
                 if action_outcome.net_resources_received > 0.0:
                     successful_extractions += 1
+                character_type = agent.character.character_type
+                harvest_totals[character_type] += (
+                    action_outcome.net_resources_received
+                )
+                harvest_counts[character_type] += 1
                 if not action_outcome.compliant:
                     violations += 1
 
@@ -127,13 +142,8 @@ class Simulator:
                     chosen_action=action,
                     economic_outcome=economic_outcome,
                     utility_component_scores=(
-                        ("wealth", utility_report.wealth),
-                        (
-                            "sustainability",
-                            utility_report.sustainability,
-                        ),
-                        ("trust", utility_report.trust),
-                        ("compliance", utility_report.compliance),
+                        ("gain", utility_report.gain),
+                        ("sustainability", utility_report.sustainability),
                         ("risk", utility_report.risk),
                     ),
                     total_utility=utility_report.total_utility,
@@ -142,6 +152,7 @@ class Simulator:
                 next_observation = self._observation_builder.build(
                     agent_id=agent.id,
                     environment=next_snapshot,
+                    quota_limit=self._config.governance.quota_limit,
                 )
                 experience = AgentExperience(
                     observation=observation,
@@ -178,6 +189,24 @@ class Simulator:
                     average_trust=self._trust_engine.average_trust(),
                     violations=violations,
                     successful_extractions=successful_extractions,
+                    average_harvest_greedy=(
+                        harvest_totals[CharacterType.GREEDY]
+                        / harvest_counts[CharacterType.GREEDY]
+                        if harvest_counts[CharacterType.GREEDY]
+                        else 0.0
+                    ),
+                    average_harvest_cooperative=(
+                        harvest_totals[CharacterType.COOPERATIVE]
+                        / harvest_counts[CharacterType.COOPERATIVE]
+                        if harvest_counts[CharacterType.COOPERATIVE]
+                        else 0.0
+                    ),
+                    average_harvest_risk_averse=(
+                        harvest_totals[CharacterType.RISK_AVERSE]
+                        / harvest_counts[CharacterType.RISK_AVERSE]
+                        if harvest_counts[CharacterType.RISK_AVERSE]
+                        else 0.0
+                    ),
                 )
             )
 

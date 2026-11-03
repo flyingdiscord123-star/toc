@@ -117,19 +117,15 @@ class NetworkConfig:
 
 @dataclass(frozen=True, slots=True)
 class DecisionConfig:
-    """Researcher-selected candidate action space for an experiment."""
+    """Researcher-selected decision policy settings."""
 
-    minimum_extraction: float = 0.0
-    maximum_extraction: float = 10.0
-    step_size: float = 2.0
+    exploration_probability: float = 0.25
 
     def __post_init__(self) -> None:
-        if self.minimum_extraction > self.maximum_extraction:
+        if not 0.0 <= self.exploration_probability <= 1.0:
             raise ValueError(
-                "minimum_extraction must be <= maximum_extraction."
+                "exploration_probability must be between 0 and 1."
             )
-        if self.step_size <= 0:
-            raise ValueError("step_size must be > 0.")
 
 
 @dataclass(slots=True)
@@ -212,8 +208,8 @@ class GovernanceConfig:
     tax_rate: float = 0.0
 
     def __post_init__(self) -> None:
-        if self.quota_limit < 0:
-            raise ValueError("quota_limit must be >= 0.")
+        if not 0.0 <= self.quota_limit <= 100.0:
+            raise ValueError("quota_limit must be between 0 and 100.")
         if not 0.0 <= self.tax_rate <= 1.0:
             raise ValueError("tax_rate must be between 0 and 1.")
 

@@ -9,8 +9,6 @@ from dataclasses import dataclass
 class UtilityWeights:
     """Relative importance assigned to each utility component."""
 
-    wealth: float
+    gain: float
     sustainability: float
-    trust: float
-    compliance: float
     risk: float

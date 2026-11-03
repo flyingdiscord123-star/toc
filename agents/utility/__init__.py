@@ -53,6 +53,7 @@ class SimpleUtilityFunction(LinearUtilityFunction):
 from .component import UtilityComponent
 from .compliance import ComplianceComponent
 from .context import UtilityContext
+from .gain import GainComponent
 from .risk import RiskComponent
 from .report import UtilityEvaluation
 from .sustainability import SustainabilityComponent
@@ -61,6 +62,7 @@ from .wealth import WealthComponent
 
 __all__ = [
     "ComplianceComponent",
+    "GainComponent",
     "LinearUtilityFunction",
     "PlaceholderUtilityFunction",
     "RiskComponent",

@@ -52,11 +52,11 @@ Rather than designing agents that invent institutions, CommonsSim assumes that g
                       ▼
               Utility Function
                       │
-      ┌───────────────┼──────────────────────────────┐
-      │               │             │                │
-  Wealth     Sustainability      Trust       Compliance
+      ┌───────────────┼────────────────┐
+      │               │                │
+    Gain       Sustainability        Risk
                       │
-                    Risk
+         Ranked Top-K with exploration
                       │
                       ▼
                 Selected Action
@@ -106,14 +106,21 @@ Current character archetypes include:
 
 ## Decision Making
 
-Agents currently perform utility maximization.
+Agents evaluate integer harvest candidates from zero through their quota,
+rank those actions by utility, and select the best action except for
+controlled exploration.
 
-For each timestep the agent:
+The decision policy:
 
 1. Observes its environment
-2. Generates candidate actions
-3. Evaluates each action
-4. Selects the action with maximum utility
+2. Generates every harvest candidate from `0` through the quota
+3. Evaluates and ranks every candidate
+4. Selects the best action with probability `1 - exploration_probability`
+5. Otherwise samples uniformly from ranks 2 through `ceil(0.5 * candidates) + 1`
+
+`exploration_probability` is configurable from 0 to 1 and defaults to 0.25.
+When the network configuration has a random seed, each agent's decisions are
+reproducible from that seed.
 
 ---
 
@@ -121,15 +128,15 @@ For each timestep the agent:
 
 Utility is represented as a weighted combination of independent behavioural objectives.
 
-Current utility components are:
+The shared utility function contains only:
 
-- Wealth
+- Gain
 - Sustainability
-- Trust
-- Compliance
 - Risk
 
-Each character type possesses its own preference weights over these components.
+Each character type uses the same utility function and differs only in its
+weights over these three components. Trust, learning, compliance, wealth, and
+taxes are not included in the decision utility.
 
 The modular design allows new utility dimensions to be introduced without modifying the decision-making algorithm.
 
@@ -179,6 +186,7 @@ Metrics collected every simulation round include:
 - Average agent wealth
 - Total wealth
 - Average trust
+- Average realized harvest for Greedy, Cooperative, and Risk-Averse agents
 - Successful extractions
 - Governance violations
 
