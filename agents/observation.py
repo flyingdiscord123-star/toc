@@ -54,6 +54,7 @@ class AgentObservation:
 
     environment: "EnvironmentSnapshot"
 
+    quota_limit: float = 20.0
     neighbors: tuple[NeighborObservation, ...] = ()
     governance_signals: dict[str, Any] = field(default_factory=dict)
 

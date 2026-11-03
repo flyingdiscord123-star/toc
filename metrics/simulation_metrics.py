@@ -22,6 +22,9 @@ class SimulationMetrics:
         average_trust: float,
         violations: int,
         successful_extractions: int,
+        average_harvest_greedy: float = 0.0,
+        average_harvest_cooperative: float = 0.0,
+        average_harvest_risk_averse: float = 0.0,
     ) -> None:
         """Append a new round metric snapshot."""
         self.rounds.append(
@@ -33,6 +36,9 @@ class SimulationMetrics:
                 average_trust=average_trust,
                 violations=violations,
                 successful_extractions=successful_extractions,
+                average_harvest_greedy=average_harvest_greedy,
+                average_harvest_cooperative=average_harvest_cooperative,
+                average_harvest_risk_averse=average_harvest_risk_averse,
             )
         )
 

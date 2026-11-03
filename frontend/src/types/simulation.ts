@@ -16,12 +16,16 @@ export interface SimulationConfig {
     taxEnabled: boolean;
     taxRate: number;
   };
+  explorationProbability: number;
 }
 
 export interface ChartData {
   round: number;
   resourceLevel: number;
   averageWealth: number;
+  averageHarvestGreedy: number;
+  averageHarvestCooperative: number;
+  averageHarvestRiskAverse: number;
 }
 
 export interface SimulationResult {

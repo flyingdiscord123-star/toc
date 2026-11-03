@@ -20,7 +20,7 @@ class EnvironmentSettings(BaseModel):
 
 class GovernanceSettings(BaseModel):
 	quota_enabled: bool = Field(alias="quotaEnabled")
-	quota_limit: float = Field(alias="quotaLimit", ge=0)
+	quota_limit: float = Field(alias="quotaLimit", ge=0, le=100)
 	tax_enabled: bool = Field(alias="taxEnabled")
 	tax_rate: float = Field(alias="taxRate", ge=0, le=1)
 
@@ -29,3 +29,9 @@ class SimulationRequest(BaseModel):
 	agents: AgentSettings
 	environment: EnvironmentSettings
 	governance: GovernanceSettings
+	exploration_probability: float = Field(
+		default=0.25,
+		alias="explorationProbability",
+		ge=0,
+		le=1,
+	)

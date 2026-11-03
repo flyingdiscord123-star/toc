@@ -10,14 +10,12 @@ from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
 from agents.utility import (
-    ComplianceComponent,
+    GainComponent,
     LinearUtilityFunction,
     RiskComponent,
     SustainabilityComponent,
-    TrustComponent,
     UtilityContext,
     UtilityFunction,
-    WealthComponent,
 )
 from agents.utility.component import UtilityComponent
 from agents.utility_weights import UtilityWeights
@@ -56,10 +54,8 @@ class LinearUtilityFunctionTests(unittest.TestCase):
         self.character = Character(
             character_type=CharacterType.GREEDY,
             utility_weights=UtilityWeights(
-                wealth=3.0,
+                gain=3.0,
                 sustainability=4.0,
-                trust=5.0,
-                compliance=6.0,
                 risk=7.0,
             ),
         )
@@ -81,7 +77,7 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             context.action = AgentAction(extraction_amount=8.0)  # type: ignore[misc]
 
     def test_evaluates_each_component_once(self) -> None:
-        components = [FixedComponent(score) for score in range(1, 6)]
+        components = [FixedComponent(score) for score in range(1, 4)]
         utility = LinearUtilityFunction(*components)
 
         utility.evaluate(
@@ -97,10 +93,8 @@ class LinearUtilityFunctionTests(unittest.TestCase):
     def test_context_is_passed_to_components(self) -> None:
         component = FixedComponent(1.0)
         utility = LinearUtilityFunction(
-            wealth=component,
+            gain=component,
             sustainability=component,
-            trust=component,
-            compliance=component,
             risk=component,
         )
 
@@ -111,7 +105,7 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             character=self.character,
         )
 
-        self.assertEqual(component.calls, 5)
+        self.assertEqual(component.calls, 3)
 
     def test_baseline_component_scores_are_normalized(self) -> None:
         context = UtilityContext(
@@ -121,10 +115,8 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             character=self.character,
         )
         components = (
-            WealthComponent(),
+            GainComponent(),
             SustainabilityComponent(),
-            TrustComponent(),
-            ComplianceComponent(),
             RiskComponent(),
         )
 
@@ -138,8 +130,6 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             FixedComponent(2.0),
             FixedComponent(1.0),
             FixedComponent(0.5),
-            FixedComponent(2.0),
-            FixedComponent(1.0),
         ]
         utility = LinearUtilityFunction(*components)
 
@@ -150,23 +140,19 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             character=self.character,
         )
 
-        self.assertEqual(result, 17.5)
+        self.assertEqual(result, 6.5)
 
     def test_subtracts_risk(self) -> None:
         character = Character(
             character_type=CharacterType.GREEDY,
             utility_weights=UtilityWeights(
-                wealth=1.0,
+                gain=1.0,
                 sustainability=0.0,
-                trust=0.0,
-                compliance=0.0,
                 risk=1.0,
             ),
         )
         utility = LinearUtilityFunction(
             FixedComponent(10.0),
-            FixedComponent(0.0),
-            FixedComponent(0.0),
             FixedComponent(0.0),
             FixedComponent(2.0),
         )
@@ -181,21 +167,17 @@ class LinearUtilityFunctionTests(unittest.TestCase):
         self.assertEqual(result, 8.0)
 
     def test_custom_components_can_be_injected(self) -> None:
-        wealth = FixedComponent(6.0)
+        gain = FixedComponent(6.0)
         utility = LinearUtilityFunction(
-            wealth=wealth,
+            gain=gain,
             sustainability=FixedComponent(0.0),
-            trust=FixedComponent(0.0),
-            compliance=FixedComponent(0.0),
             risk=FixedComponent(0.0),
         )
         character = Character(
             character_type=CharacterType.GREEDY,
             utility_weights=UtilityWeights(
-                wealth=2.0,
+                gain=2.0,
                 sustainability=0.0,
-                trust=0.0,
-                compliance=0.0,
                 risk=0.0,
             ),
         )
@@ -208,7 +190,7 @@ class LinearUtilityFunctionTests(unittest.TestCase):
         )
 
         self.assertEqual(result, 12.0)
-        self.assertEqual(wealth.calls, 1)
+        self.assertEqual(gain.calls, 1)
 
     def test_evaluate_candidates_returns_ordered_reports(self) -> None:
         utility = LinearUtilityFunction()
@@ -228,12 +210,9 @@ class LinearUtilityFunctionTests(unittest.TestCase):
             self.assertEqual(
                 report.total_utility,
                 (
-                    self.character.utility_weights.wealth * report.wealth
+                    self.character.utility_weights.gain * report.gain
                     + self.character.utility_weights.sustainability
                     * report.sustainability
-                    + self.character.utility_weights.trust * report.trust
-                    + self.character.utility_weights.compliance
-                    * report.compliance
                     - self.character.utility_weights.risk * report.risk
                 ),
             )

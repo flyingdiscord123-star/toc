@@ -39,6 +39,7 @@ export function SimulationForm({ config, running, onChange, onRun }: Props) {
     agents: { numAgents: 100, greedyPercentage: 50, cooperativePercentage: 30, riskAversePercentage: 20 },
     environment: { initialResources: 1000, regenerationRate: 2, rounds: 500 },
     governance: { quotaEnabled: true, quotaLimit: 20, taxEnabled: false, taxRate: 0 },
+    explorationProbability: 0.25,
   });
   return (
     <div className="space-y-5">
@@ -64,9 +65,12 @@ export function SimulationForm({ config, running, onChange, onRun }: Props) {
       </SectionCard>
       <SectionCard eyebrow="03 / Governance" title="Institutional controls" description="Governance is exogenous and fixed before a run begins.">
         <div className="space-y-6">
-          <Slider label="Quota limit" value={config.governance.quotaLimit} min={0} max={50} step={1} onChange={(value) => onChange({ ...config, governance: { ...config.governance, quotaLimit: value } })} />
+          <Slider label="Quota limit" value={config.governance.quotaLimit} min={0} max={100} step={1} onChange={(value) => onChange({ ...config, governance: { ...config.governance, quotaLimit: value } })} />
           <Slider label="Tax rate" value={config.governance.taxRate} min={0} max={30} step={1} suffix="%" onChange={(value) => onChange({ ...config, governance: { ...config.governance, taxRate: value } })} />
         </div>
+      </SectionCard>
+      <SectionCard eyebrow="04 / Decision policy" title="Controlled exploration" description="Sometimes choose a high-utility alternative instead of the top-ranked harvest.">
+        <Slider label="Exploration Probability" value={config.explorationProbability} min={0} max={1} step={0.05} onChange={(value) => onChange({ ...config, explorationProbability: value })} />
       </SectionCard>
       <div className="flex items-center gap-3">
         <button className="button-primary flex-1" type="button" onClick={onRun} disabled={running}><Play size={17} fill="currentColor" />{running ? "Running experiment…" : "Run simulation"}</button>

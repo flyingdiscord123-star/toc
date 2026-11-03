@@ -43,6 +43,7 @@ class ObservationBuilder:
         self,
         agent_id: int,
         environment: EnvironmentSnapshot,
+        quota_limit: float = 20.0,
     ) -> AgentObservation:
         """
         Construct the observation for a single agent.
@@ -66,6 +67,7 @@ class ObservationBuilder:
         return AgentObservation(
             round_number=environment.round_number,
             environment=environment,
+            quota_limit=quota_limit,
             neighbors=neighbors,
             governance_signals={},
             metadata={},

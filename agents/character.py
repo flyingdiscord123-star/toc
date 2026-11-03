@@ -38,29 +38,25 @@ class Character:
 
     @classmethod
     def greedy(cls) -> "Character":
-        """Create a character focused primarily on wealth."""
+        """Create a character focused primarily on immediate harvest gain."""
         return cls(
             character_type=CharacterType.GREEDY,
             utility_weights=UtilityWeights(
-                wealth=0.85,
-                sustainability=0.05,
-                trust=0.05,
-                compliance=0.00,
+                gain=0.85,
+                sustainability=0.10,
                 risk=0.05,
             ),
         )
 
     @classmethod
     def cooperative(cls) -> "Character":
-        """Create a character emphasizing sustainability and trust."""
+        """Create a character balancing gain and sustainability."""
         return cls(
             character_type=CharacterType.COOPERATIVE,
             utility_weights=UtilityWeights(
-                wealth=0.35,
-                sustainability=0.35,
-                trust=0.20,
-                compliance=0.05,
-                risk=0.05,
+                gain=0.35,
+                sustainability=0.45,
+                risk=0.20,
             ),
         )
 
@@ -70,10 +66,8 @@ class Character:
         return cls(
             character_type=CharacterType.RISK_AVERSE,
             utility_weights=UtilityWeights(
-                wealth=0.35,
-                sustainability=0.15,
-                trust=0.10,
-                compliance=0.10,
-                risk=0.30,
+                gain=0.20,
+                sustainability=0.20,
+                risk=0.60,
             ),
         )

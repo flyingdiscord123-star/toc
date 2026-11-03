@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from api.schemas import SimulationRequest
 from config.simulation_config import (
 	AgentConfig,
+	DecisionConfig,
 	EnvironmentConfig,
 	GovernanceConfig,
 	LearningAlgorithm,
@@ -47,7 +48,10 @@ def run_simulation(request: SimulationRequest) -> dict[str, object]:
 			regeneration_rate=environment.regeneration_rate,
 			rounds=environment.rounds,
 		),
-		network=NetworkConfig(topology=NetworkTopology.COMPLETE),
+		network=NetworkConfig(
+			topology=NetworkTopology.COMPLETE,
+			random_seed=42,
+		),
 		agents=AgentConfig(
 			num_agents=agents.num_agents,
 			greedy_percentage=agents.greedy_percentage,
@@ -62,6 +66,9 @@ def run_simulation(request: SimulationRequest) -> dict[str, object]:
 		),
 		learning=LearningConfig(
 			learning_algorithm=LearningAlgorithm.NO_LEARNING,
+		),
+		decision=DecisionConfig(
+			exploration_probability=request.exploration_probability
 		),
 	)
 
@@ -84,6 +91,15 @@ def run_simulation(request: SimulationRequest) -> dict[str, object]:
 				"round": metrics.round_number,
 				"resourceLevel": metrics.resource_level,
 				"averageWealth": metrics.average_wealth,
+				"averageHarvestGreedy": (
+					metrics.average_harvest_greedy
+				),
+				"averageHarvestCooperative": (
+					metrics.average_harvest_cooperative
+				),
+				"averageHarvestRiskAverse": (
+					metrics.average_harvest_risk_averse
+				),
 			}
 			for metrics in result.metrics_history
 		],

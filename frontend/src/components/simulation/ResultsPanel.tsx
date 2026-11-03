@@ -1,5 +1,5 @@
 import { Activity, CheckCircle2, LineChart as LineChartIcon } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { SimulationResult } from "../../types/simulation";
 import { ChartCard } from "../ui/ChartCard";
 import { MetricCard } from "../ui/MetricCard";
@@ -20,6 +20,9 @@ export function ResultsPanel({ result }: { result: SimulationResult | null }) {
         <ChartCard title="Resource vs time" detail="Available commons resource by round"><Chart data={result.chartData} dataKey="resourceLevel" color="#087f8c" label="Resource" /></ChartCard>
         <ChartCard title="Average wealth" detail="Mean accumulated wealth by round"><Chart data={result.chartData} dataKey="averageWealth" color="#e9795f" label="Wealth" /></ChartCard>
       </div>
+      <ChartCard title="Average harvest by agent type" detail="Mean realized harvest per agent in each group and round">
+        <HarvestChart data={result.chartData} />
+      </ChartCard>
       <div className="flex items-center gap-3 rounded-2xl border border-teal/15 bg-teal/[0.06] px-5 py-4 text-sm text-ink/70"><CheckCircle2 size={18} className="text-teal" /><span>Simulation complete at {new Date(result.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.</span></div>
     </div>
   );
@@ -27,4 +30,26 @@ export function ResultsPanel({ result }: { result: SimulationResult | null }) {
 
 function Chart({ data, dataKey, color, label }: { data: SimulationResult["chartData"]; dataKey: "resourceLevel" | "averageWealth"; color: string; label: string }) {
   return <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}><CartesianGrid stroke="#17252a" strokeOpacity={0.08} vertical={false} /><XAxis dataKey="round" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#17252a", opacity: 0.45 }} /><YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#17252a", opacity: 0.45 }} /><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid rgba(23,37,42,.1)", boxShadow: "0 8px 20px rgba(23,37,42,.1)" }} formatter={(value) => [typeof value === "number" ? value.toFixed(1) : "—", label]} /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2.5} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} /></LineChart></ResponsiveContainer></div>;
+}
+
+function HarvestChart({ data }: { data: SimulationResult["chartData"] }) {
+  return (
+    <div className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 16 }}>
+          <CartesianGrid stroke="#17252a" strokeOpacity={0.08} vertical={false} />
+          <XAxis dataKey="round" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#17252a", opacity: 0.45 }} label={{ value: "Round", position: "insideBottom", offset: -8 }} />
+          <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#17252a", opacity: 0.45 }} label={{ value: "Average Harvest", angle: -90, position: "insideLeft" }} />
+          <Tooltip
+            contentStyle={{ borderRadius: 12, border: "1px solid rgba(23,37,42,.1)", boxShadow: "0 8px 20px rgba(23,37,42,.1)" }}
+            formatter={(value) => [typeof value === "number" ? value.toFixed(2) : "—"]}
+          />
+          <Legend />
+          <Line type="linear" dataKey="averageHarvestGreedy" name="Greedy" stroke="#087f8c" strokeWidth={2.5} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+          <Line type="linear" dataKey="averageHarvestCooperative" name="Cooperative" stroke="#e9795f" strokeWidth={2.5} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+          <Line type="linear" dataKey="averageHarvestRiskAverse" name="Risk-Averse" stroke="#7657a5" strokeWidth={2.5} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }

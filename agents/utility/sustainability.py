@@ -7,13 +7,13 @@ from .context import UtilityContext
 
 
 class SustainabilityComponent(UtilityComponent):
-    """Provide a neutral sustainability score until domain scoring is added."""
+    """Score the resource remaining after harvest and one regeneration step."""
 
     def evaluate(
         self,
         context: UtilityContext,
     ) -> float:
-        """Return resources after one regeneration step, normalized by capacity."""
+        """Return expected resources normalized by environment capacity."""
         environment = context.observation.environment
         remaining_resources = max(
             environment.available_resources
