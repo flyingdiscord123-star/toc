@@ -6,6 +6,7 @@ import unittest
 from uuid import uuid4
 
 from agents.action import AgentAction
+from agents.character import Character
 from agents.observation import AgentObservation
 from economics.economic_outcome import EconomicOutcome
 from environment.environment import EnvironmentSnapshot
@@ -34,6 +35,12 @@ class LearningExperienceTests(unittest.TestCase):
             ),
             utility_component_scores=(("wealth", 1.0),),
             total_utility=1.0,
+            character=Character.greedy(),
+            chosen_w=1.0,
+            chosen_s=0.9,
+            predicted_utility=1.0,
+            realized_reward=10.0,
+            normalization_capacity=100.0,
         )
 
     def test_is_immutable(self) -> None:

@@ -69,12 +69,10 @@ class PlaceholderResourceModel(ResourceModel):
         )
 class LinearResourceModel(ResourceModel):
     """
-    Simple linear regeneration model.
+    Regenerate a fixed percentage of the remaining resource per round.
 
-    This is a temporary implementation used to verify the
-    simulation framework. More sophisticated regeneration
-    models (logistic, seasonal, stochastic, etc.) can be
-    added later.
+    ``regeneration_rate`` is expressed in percentage points, so a rate of
+    ``2.0`` adds 2% of the post-harvest stock each round.
     """
 
     def __init__(
@@ -88,7 +86,8 @@ class LinearResourceModel(ResourceModel):
         current_resources: float,
         maximum_capacity: float,
     ) -> float:
-
-        regenerated = current_resources + self._regeneration_rate
+        regenerated = current_resources * (
+            1.0 + self._regeneration_rate / 100.0
+        )
 
         return min(regenerated, maximum_capacity)

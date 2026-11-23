@@ -19,6 +19,8 @@ Responsibilities
 
 from __future__ import annotations
 
+import math
+
 from .action import AgentAction
 from .character import Character
 from .decision import DecisionPolicy
@@ -110,6 +112,30 @@ class Agent:
     def utility_function(self) -> UtilityFunction:
         """Utility function used to evaluate this agent's actions."""
         return self._utility_function
+
+    @property
+    def learning_model(self) -> LearningAlgorithm:
+        """Learning algorithm used to update this agent."""
+        return self._learning
+
+    @property
+    def theta(self) -> float:
+        """Current SVO angle from the agent's character profile."""
+        return self._character.theta
+
+    @theta.setter
+    def theta(self, value: float) -> None:
+        self._character.theta = value
+
+    @property
+    def initial_theta(self) -> float:
+        """Immutable initial SVO angle from the agent's character profile."""
+        return self._character.initial_theta
+
+    @property
+    def effective_weights(self) -> tuple[float, float]:
+        """Return the current wealth and sustainability weights."""
+        return math.cos(self.theta), math.sin(self.theta)
 
     def observe(
         self,

@@ -56,7 +56,10 @@ def main() -> None:
         environment=environment.snapshot(),
     )
     policy = UtilityMaximizationPolicy()
-    candidate_amounts = policy.candidate_extraction_amounts()
+    candidate_amounts = policy.candidate_extraction_amounts(
+        available_stock=observation.environment.available_resources,
+        maximum_capacity=observation.environment.maximum_capacity,
+    )
     reports = utility_function.evaluate_candidates(
         observation=observation,
         candidate_extraction_amounts=candidate_amounts,
@@ -64,14 +67,13 @@ def main() -> None:
         character=agent.character,
     )
 
-    print("Action  Gain  Sustain  Risk  Utility")
-    print("-" * 62)
+    print("Action  Wealth  Sustain  Utility")
+    print("-" * 46)
     for report in reports:
         print(
             f"{report.action.extraction_amount:>6.0f}  "
-            f"{report.gain:>4.2f}  "
-            f"{report.sustainability:>7.2f}  "
-            f"{report.risk:>4.2f}  "
+            f"{report.chosen_w:>6.2f}  "
+            f"{report.chosen_s:>7.2f}  "
             f"{report.total_utility:>7.2f}"
         )
 
@@ -82,7 +84,7 @@ def main() -> None:
     ).action
     assert chosen_action == report_action
 
-    print("-" * 62)
+    print("-" * 46)
     print(f"Chosen Action: {chosen_action.extraction_amount:g}")
 
 

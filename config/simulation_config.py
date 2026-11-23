@@ -37,6 +37,7 @@ class LearningAlgorithm(Enum):
     REINFORCEMENT = "Reinforcement"
     BAYESIAN = "Bayesian"
     GNN = "GNN"
+    SVO_GRADIENT = "SVOGradient"
 
 
 class CharacterType(Enum):
@@ -54,12 +55,16 @@ class CharacterType(Enum):
 class EnvironmentConfig:
     """
     Configuration describing the shared renewable resource.
+
+    ``regeneration_rate`` is a percentage of post-harvest stock per round.
     """
 
     initial_resources: float
     maximum_capacity: float
     regeneration_rate: float
     rounds: int
+    harvest_fraction: float = 0.05
+    reserve_fraction: float = 0.05
 
     def __post_init__(self) -> None:
         if self.initial_resources < 0:
@@ -75,11 +80,15 @@ class EnvironmentConfig:
 
         if self.regeneration_rate < 0:
             raise ValueError(
-                "regeneration_rate cannot be negative."
+                "regeneration_rate percentage cannot be negative."
             )
 
         if self.rounds <= 0:
             raise ValueError("rounds must be positive.")
+        if not 0.0 <= self.harvest_fraction <= 1.0:
+            raise ValueError("harvest_fraction must be between 0 and 1.")
+        if not 0.0 <= self.reserve_fraction <= 1.0:
+            raise ValueError("reserve_fraction must be between 0 and 1.")
 
 
 # ==========================================================
@@ -229,6 +238,14 @@ class LearningConfig:
     learning_algorithm: LearningAlgorithm = (
         LearningAlgorithm.NO_LEARNING
     )
+    learning_rate: float = 0.01
+    anchor_lambda: float = 0.20
+
+    def __post_init__(self) -> None:
+        if self.learning_rate < 0.0:
+            raise ValueError("learning_rate must be non-negative.")
+        if not 0.0 <= self.anchor_lambda <= 1.0:
+            raise ValueError("anchor_lambda must be between 0 and 1.")
 
 
 # ==========================================================

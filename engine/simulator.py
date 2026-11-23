@@ -142,11 +142,18 @@ class Simulator:
                     chosen_action=action,
                     economic_outcome=economic_outcome,
                     utility_component_scores=(
-                        ("gain", utility_report.gain),
-                        ("sustainability", utility_report.sustainability),
-                        ("risk", utility_report.risk),
+                        ("wealth", utility_report.chosen_w),
+                        ("sustainability", utility_report.chosen_s),
                     ),
                     total_utility=utility_report.total_utility,
+                    character=agent.character,
+                    chosen_w=utility_report.chosen_w,
+                    chosen_s=utility_report.chosen_s,
+                    predicted_utility=utility_report.total_utility,
+                    realized_reward=extracted,
+                    normalization_capacity=(
+                        observation.environment.maximum_capacity
+                    ),
                 )
                 next_snapshot = self._environment.snapshot()
                 next_observation = self._observation_builder.build(
@@ -169,7 +176,7 @@ class Simulator:
                     target=agent.id,
                     successful_interaction=action_outcome.compliant,
                 )
-                agent.learn(learning_experience)
+                agent.learning_model.update(learning_experience)
 
             self._environment.step()
             average_wealth = sum(

@@ -37,7 +37,7 @@ function Slider({ label, value, min, max, step = 1, suffix = "", onChange }: { l
 export function SimulationForm({ config, running, onChange, onRun }: Props) {
   const reset = () => onChange({
     agents: { numAgents: 100, greedyPercentage: 50, cooperativePercentage: 30, riskAversePercentage: 20 },
-    environment: { initialResources: 1000, regenerationRate: 2, rounds: 500 },
+    environment: { initialResources: 1000, regenerationRate: 2, rounds: 50 },
     governance: { quotaEnabled: true, quotaLimit: 20, taxEnabled: false, taxRate: 0 },
     explorationProbability: 0.25,
   });
@@ -59,8 +59,8 @@ export function SimulationForm({ config, running, onChange, onRun }: Props) {
       <SectionCard eyebrow="02 / Environment" title="Shared resource" description="Define the renewable commons and experimental horizon.">
         <div className="space-y-6">
           <Slider label="Initial resource" value={config.environment.initialResources} min={100} max={5000} step={50} onChange={(value) => onChange({ ...config, environment: { ...config.environment, initialResources: value } })} />
-          <Slider label="Regeneration rate" value={config.environment.regenerationRate} min={0} max={10} step={0.5} suffix="%" onChange={(value) => onChange({ ...config, environment: { ...config.environment, regenerationRate: value } })} />
-          <Slider label="Simulation rounds" value={config.environment.rounds} min={50} max={1000} step={50} onChange={(value) => onChange({ ...config, environment: { ...config.environment, rounds: value } })} />
+          <Slider label="Regeneration rate (% of current stock per round)" value={config.environment.regenerationRate} min={0} max={10} step={0.5} suffix="%" onChange={(value) => onChange({ ...config, environment: { ...config.environment, regenerationRate: value } })} />
+          <Slider label="Simulation rounds" value={config.environment.rounds} min={1} max={50} onChange={(value) => onChange({ ...config, environment: { ...config.environment, rounds: value } })} />
         </div>
       </SectionCard>
       <SectionCard eyebrow="03 / Governance" title="Institutional controls" description="Governance is exogenous and fixed before a run begins.">

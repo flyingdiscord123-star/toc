@@ -7,16 +7,18 @@ from .context import UtilityContext
 
 
 class RiskComponent(UtilityComponent):
-    """Score risk quadratically as the harvested quota share grows."""
+    """Increase risk as harvest becomes large relative to current resources."""
 
     def evaluate(
         self,
         context: UtilityContext,
     ) -> float:
-        """Return normalized perceived risk from extraction size."""
+        """Scale quota-normalized harvest risk by current resource scarcity."""
+        environment = context.observation.environment
         quota = context.observation.quota_limit
-        if quota <= 0.0:
+        harvest = max(context.action.extraction_amount, 0.0)
+        if quota <= 0.0 or harvest == 0.0:
             return 0.0
-        quota_share = context.action.extraction_amount / quota
-        score = quota_share * quota_share
-        return min(max(score, 0.0), 1.0)
+        current_resources = max(environment.available_resources, 1e-9)
+        capacity = max(environment.maximum_capacity, 1.0)
+        return (harvest / current_resources) * (capacity / quota)

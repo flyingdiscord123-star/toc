@@ -14,7 +14,11 @@ class AgentSettings(BaseModel):
 
 class EnvironmentSettings(BaseModel):
 	initial_resources: float = Field(alias="initialResources", ge=0)
-	regeneration_rate: float = Field(alias="regenerationRate", ge=0)
+	regeneration_rate: float = Field(
+		alias="regenerationRate",
+		ge=0,
+		description="Percentage of post-harvest stock regenerated each round.",
+	)
 	rounds: int = Field(gt=0)
 
 

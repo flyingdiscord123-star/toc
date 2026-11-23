@@ -7,7 +7,7 @@ import { ResultsPanel } from "../components/simulation/ResultsPanel";
 
 const initialConfig: SimulationConfig = {
   agents: { numAgents: 100, greedyPercentage: 50, cooperativePercentage: 30, riskAversePercentage: 20 },
-  environment: { initialResources: 1000, regenerationRate: 2, rounds: 500 },
+  environment: { initialResources: 1000, regenerationRate: 2, rounds: 50 },
   governance: { quotaEnabled: true, quotaLimit: 20, taxEnabled: false, taxRate: 0 },
   explorationProbability: 0.25,
 };

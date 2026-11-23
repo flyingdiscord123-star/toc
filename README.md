@@ -106,17 +106,20 @@ Current character archetypes include:
 
 ## Decision Making
 
-Agents evaluate integer harvest candidates from zero through their quota,
-rank those actions by utility, and select the best action except for
-controlled exploration.
+Agents evaluate evenly spaced harvest candidates between zero and a
+stock-dependent, type-blind per-capita cap, rank those actions by utility,
+and select the best action except for controlled exploration.
 
 The decision policy:
 
 1. Observes its environment
-2. Generates every harvest candidate from `0` through the quota
+2. Generates 41 harvest candidates from `0` through the per-capita cap,
+   additionally bounded by the quota when enabled
 3. Evaluates and ranks every candidate
 4. Selects the best action with probability `1 - exploration_probability`
-5. Otherwise samples uniformly from ranks 2 through `ceil(0.5 * candidates) + 1`
+5. Otherwise samples uniformly from the next-best half of candidates, but only
+   among actions whose utility is at least as high as taking no harvest; if
+   none qualify, it selects the best action
 
 `exploration_probability` is configurable from 0 to 1 and defaults to 0.25.
 When the network configuration has a random seed, each agent's decisions are
@@ -126,19 +129,21 @@ reproducible from that seed.
 
 ## Utility Function
 
-Utility is represented as a weighted combination of independent behavioural objectives.
+Utility uses two capacity-normalized components:
 
-The shared utility function contains only:
+- Wealth: `W(a) = (feasible_harvest / capacity) ** 0.92`
+- Sustainability:
+  `S(a) = (min(capacity, max(0, stock - harvest + regeneration)) / capacity) ** 0.85`
 
-- Gain
-- Sustainability
-- Risk
+The shared score is `U(a) = cos(theta) * W(a) + sin(theta) * S(a)`.
+Greedy, Cooperative, and Risk-Averse profiles use baseline angles of 0°, 64°,
+and 67° respectively. The same utility and type-blind harvest cap apply to
+every agent; only the SVO angle differs.
 
-Each character type uses the same utility function and differs only in its
-weights over these three components. Trust, learning, compliance, wealth, and
-taxes are not included in the decision utility.
-
-The modular design allows new utility dimensions to be introduced without modifying the decision-making algorithm.
+Regeneration is a percentage of the post-harvest stock each round:
+`next_stock = min(capacity, stock_after_harvest * (1 + regeneration_rate / 100))`.
+For example, a 2% rate adds 20 units to a stock of 1,000, or 10 units to a
+stock of 500, before the capacity limit is applied.
 
 ---
 
@@ -170,11 +175,12 @@ Trust evolves independently of governance and will later influence decision maki
 
 ## Learning
 
-Current implementation:
+API simulations use `SVOGradient` learning by default. Each agent updates its
+SVO angle after every round using the chosen Wealth and Sustainability scores,
+with a learning rate of `0.01` and baseline-anchor strength of `0.20`.
+Other simulation configurations may still select `NoLearning`.
 
-- NoLearning
-
-The simulator architecture is designed to support future adaptive learning algorithms without modifying the surrounding system.
+Learning adapts agent preferences; it does not change governance policies.
 
 ---
 
@@ -278,17 +284,13 @@ python3 -m example.simulation_test
 
 # Future Work
 
-## Adaptive Learning
+## Other Learning Algorithms
 
-Current utility weights are fixed.
-
-Future work will investigate learning algorithms that allow agents to adapt their behavioural preferences over time, including:
+Future work may add other algorithms for adapting agent preferences, such as:
 
 - Reinforcement Learning
 - Bayesian Updating
 - Evolutionary Learning
-
-Learning will modify **agent preferences**, not governance policies.
 
 ---
 

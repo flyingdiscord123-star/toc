@@ -1,73 +1,58 @@
-"""
-character.py
-
-Defines immutable personality characteristics for agents.
-
-A Character describes who an agent is, not what it does.
-
-Decision-making, learning, and utility calculations are handled by
-their respective modules.
-"""
+"""SVO personality profile for an agent."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 
 from config.simulation_config import CharacterType
 
-from .utility_weights import UtilityWeights
 
-
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True, init=False)
 class Character:
-    """
-    Immutable personality description for an agent.
-
-    Parameters
-    ----------
-    character_type:
-        High-level personality category.
-
-    utility_weights:
-        Relative importance assigned to each utility component.
-    """
+    """Mutable SVO angle with an immutable baseline profile angle."""
 
     character_type: CharacterType
+    _theta: float
+    _initial_theta: float = field(repr=False)
 
-    utility_weights: UtilityWeights
+    def __init__(self, character_type: CharacterType, theta: float) -> None:
+        self.character_type = character_type
+        self.theta = theta
+        self._initial_theta = theta
+
+    @property
+    def theta(self) -> float:
+        """Current social value orientation angle, in radians."""
+        return self._theta
+
+    @theta.setter
+    def theta(self, value: float) -> None:
+        if not 0.0 <= value <= math.pi / 2:
+            raise ValueError("theta must be between 0 and pi/2.")
+        self._theta = value
+
+    @property
+    def initial_theta(self) -> float:
+        """Original profile angle used for baseline anchoring."""
+        return self._initial_theta
+
+    @property
+    def effective_weights(self) -> tuple[float, float]:
+        """Return the wealth and sustainability weights."""
+        return math.cos(self.theta), math.sin(self.theta)
 
     @classmethod
     def greedy(cls) -> "Character":
-        """Create a character focused primarily on immediate harvest gain."""
-        return cls(
-            character_type=CharacterType.GREEDY,
-            utility_weights=UtilityWeights(
-                gain=0.85,
-                sustainability=0.10,
-                risk=0.05,
-            ),
-        )
+        """Create a profile focused on immediate extraction."""
+        return cls(CharacterType.GREEDY, 0.0)
 
     @classmethod
     def cooperative(cls) -> "Character":
-        """Create a character balancing gain and sustainability."""
-        return cls(
-            character_type=CharacterType.COOPERATIVE,
-            utility_weights=UtilityWeights(
-                gain=0.35,
-                sustainability=0.45,
-                risk=0.20,
-            ),
-        )
+        """Create a sustainability-oriented wealth profile."""
+        return cls(CharacterType.COOPERATIVE, math.radians(64.0))
 
     @classmethod
     def risk_averse(cls) -> "Character":
-        """Create a character with a high risk sensitivity."""
-        return cls(
-            character_type=CharacterType.RISK_AVERSE,
-            utility_weights=UtilityWeights(
-                gain=0.20,
-                sustainability=0.20,
-                risk=0.60,
-            ),
-        )
+        """Create the profile historically named risk-averse."""
+        return cls(CharacterType.RISK_AVERSE, math.radians(67.0))

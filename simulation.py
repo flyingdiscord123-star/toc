@@ -182,16 +182,25 @@ class Simulation:
             memory=AgentMemory(),
             decision_policy=UtilityMaximizationPolicy(
                 decision_config=self.config.decision,
-                quota_limit=self.config.governance.quota_limit,
+                quota_limit=(
+                    self.config.governance.quota_limit
+                    if self.config.governance.quota_enabled
+                    else None
+                ),
                 random_seed=(
                     self.config.network.random_seed + agent_id
                     if self.config.network.random_seed is not None
                     else None
                 ),
+                num_agents=self.config.agents.num_agents,
+                harvest_fraction=self.config.environment.harvest_fraction,
+                reserve_fraction=self.config.environment.reserve_fraction,
             ),
             utility_function=self._utility_function,
             learning=LearningFactory.create(
-                self.config.learning.learning_algorithm.value
+                self.config.learning.learning_algorithm.value,
+                learning_rate=self.config.learning.learning_rate,
+                anchor_lambda=self.config.learning.anchor_lambda,
             ),
         )
 

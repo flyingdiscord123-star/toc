@@ -65,7 +65,7 @@ def run_simulation(request: SimulationRequest) -> dict[str, object]:
 			tax_rate=governance.tax_rate,
 		),
 		learning=LearningConfig(
-			learning_algorithm=LearningAlgorithm.NO_LEARNING,
+			learning_algorithm=LearningAlgorithm.SVO_GRADIENT,
 		),
 		decision=DecisionConfig(
 			exploration_probability=request.exploration_probability

@@ -1,7 +1,8 @@
-"""Focused tests for the modular linear utility subsystem."""
+"""Tests for the pure two-component SVO utility function."""
 
 from __future__ import annotations
 
+import math
 import unittest
 from uuid import uuid4
 
@@ -10,212 +11,153 @@ from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
 from agents.utility import (
-    GainComponent,
     LinearUtilityFunction,
-    RiskComponent,
-    SustainabilityComponent,
-    UtilityContext,
+    SVOUtilityFunction,
     UtilityFunction,
 )
-from agents.utility.component import UtilityComponent
-from agents.utility_weights import UtilityWeights
 from config.simulation_config import CharacterType
 from environment.environment import EnvironmentSnapshot
 
 
-class FixedComponent(UtilityComponent):
-    """Test component returning a fixed score and tracking evaluations."""
-
-    def __init__(self, score: float) -> None:
-        self.score = score
-        self.calls = 0
-
-    def evaluate(
-        self,
-        context: UtilityContext,
-    ) -> float:
-        self.calls += 1
-        return self.score
-
-
-class LinearUtilityFunctionTests(unittest.TestCase):
+class SVOUtilityFunctionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.observation = AgentObservation(
             round_number=0,
             environment=EnvironmentSnapshot(
                 round_number=0,
-                available_resources=100.0,
+                available_resources=80.0,
                 maximum_capacity=100.0,
-                regeneration_rate=2.0,
+                regeneration_rate=5.0,
             ),
         )
-        self.action = AgentAction(extraction_amount=4.0)
         self.state = AgentState(agent_id=uuid4())
-        self.character = Character(
-            character_type=CharacterType.GREEDY,
-            utility_weights=UtilityWeights(
-                gain=3.0,
-                sustainability=4.0,
-                risk=7.0,
-            ),
-        )
 
-    def test_is_a_utility_function(self) -> None:
-        self.assertTrue(
-            issubclass(LinearUtilityFunction, UtilityFunction)
-        )
+    def test_linear_utility_name_is_svo_implementation(self) -> None:
+        self.assertIs(LinearUtilityFunction, SVOUtilityFunction)
+        self.assertTrue(issubclass(SVOUtilityFunction, UtilityFunction))
 
-    def test_utility_context_is_immutable(self) -> None:
-        context = UtilityContext(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=self.character,
+    def test_profiles_use_expected_angles_and_independent_mutable_angles(self) -> None:
+        profiles = (
+            (Character.greedy(), 0.0),
+            (Character.cooperative(), math.radians(64.0)),
+            (Character.risk_averse(), math.radians(67.0)),
         )
+        for character, expected_theta in profiles:
+            self.assertAlmostEqual(character.theta, expected_theta)
+            self.assertAlmostEqual(character.initial_theta, expected_theta)
 
+        character = Character.cooperative()
+        character.theta = 0.5
+        self.assertAlmostEqual(character.initial_theta, math.radians(64.0))
         with self.assertRaises(AttributeError):
-            context.action = AgentAction(extraction_amount=8.0)  # type: ignore[misc]
+            character.initial_theta = 0.5  # type: ignore[misc]
+        with self.assertRaises(ValueError):
+            character.theta = math.pi
 
-    def test_evaluates_each_component_once(self) -> None:
-        components = [FixedComponent(score) for score in range(1, 4)]
-        utility = LinearUtilityFunction(*components)
-
-        utility.evaluate(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=self.character,
-        )
-
-        for component in components:
-            self.assertEqual(component.calls, 1)
-
-    def test_context_is_passed_to_components(self) -> None:
-        component = FixedComponent(1.0)
-        utility = LinearUtilityFunction(
-            gain=component,
-            sustainability=component,
-            risk=component,
-        )
-
-        utility.evaluate(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=self.character,
-        )
-
-        self.assertEqual(component.calls, 3)
-
-    def test_baseline_component_scores_are_normalized(self) -> None:
-        context = UtilityContext(
-            observation=self.observation,
-            action=AgentAction(extraction_amount=10.0),
-            state=self.state,
-            character=self.character,
-        )
-        components = (
-            GainComponent(),
-            SustainabilityComponent(),
-            RiskComponent(),
-        )
-
-        for component in components:
-            score = component.evaluate(context)
-            self.assertGreaterEqual(score, 0.0)
-            self.assertLessEqual(score, 1.0)
-
-    def test_applies_character_weights(self) -> None:
-        components = [
-            FixedComponent(2.0),
-            FixedComponent(1.0),
-            FixedComponent(0.5),
-        ]
-        utility = LinearUtilityFunction(*components)
-
-        result = utility.evaluate(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=self.character,
-        )
-
-        self.assertEqual(result, 6.5)
-
-    def test_subtracts_risk(self) -> None:
+    def test_evaluates_wealth_and_projected_sustainability(self) -> None:
         character = Character(
-            character_type=CharacterType.GREEDY,
-            utility_weights=UtilityWeights(
-                gain=1.0,
-                sustainability=0.0,
-                risk=1.0,
+            character_type=CharacterType.COOPERATIVE,
+            theta=math.radians(64.0),
+        )
+        utility = SVOUtilityFunction()
+        report = utility.evaluate_report(
+            self.observation,
+            AgentAction(extraction_amount=10.0),
+            self.state,
+            character,
+        )
+
+        self.assertAlmostEqual(report.chosen_w, 0.1**0.92)
+        self.assertAlmostEqual(report.chosen_s, 0.735**0.85)
+        self.assertAlmostEqual(
+            report.wealth_weight,
+            math.cos(math.radians(64.0)),
+        )
+        self.assertAlmostEqual(
+            report.sustainability_weight,
+            math.sin(math.radians(64.0)),
+        )
+        self.assertAlmostEqual(
+            report.total_utility,
+            math.cos(math.radians(64.0)) * (0.1**0.92)
+            + math.sin(math.radians(64.0)) * (0.735**0.85),
+        )
+
+    def test_bounds_extraction_and_projected_stock(self) -> None:
+        utility = SVOUtilityFunction()
+        character = Character.greedy()
+        exhausted_observation = AgentObservation(
+            round_number=0,
+            environment=EnvironmentSnapshot(
+                round_number=0,
+                available_resources=10.0,
+                maximum_capacity=100.0,
+                regeneration_rate=0.0,
             ),
         )
-        utility = LinearUtilityFunction(
-            FixedComponent(10.0),
-            FixedComponent(0.0),
-            FixedComponent(2.0),
+        report = utility.evaluate_report(
+            exhausted_observation,
+            AgentAction(extraction_amount=30.0),
+            self.state,
+            character,
         )
 
-        result = utility.evaluate(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=character,
-        )
+        self.assertAlmostEqual(report.chosen_w, 0.1**0.92)
+        self.assertAlmostEqual(report.chosen_s, 0.0)
+        self.assertAlmostEqual(report.total_utility, 0.1**0.92)
 
-        self.assertEqual(result, 8.0)
-
-    def test_custom_components_can_be_injected(self) -> None:
-        gain = FixedComponent(6.0)
-        utility = LinearUtilityFunction(
-            gain=gain,
-            sustainability=FixedComponent(0.0),
-            risk=FixedComponent(0.0),
+    def test_components_use_concave_power_scores(self) -> None:
+        report = SVOUtilityFunction(
+            wealth_exponent=0.92,
+            sustainability_exponent=0.85,
+        ).evaluate_report(
+            self.observation,
+            AgentAction(extraction_amount=10.0),
+            self.state,
+            Character.cooperative(),
         )
-        character = Character(
-            character_type=CharacterType.GREEDY,
-            utility_weights=UtilityWeights(
-                gain=2.0,
-                sustainability=0.0,
-                risk=0.0,
+        self.assertAlmostEqual(report.chosen_w, 0.1**0.92)
+        self.assertAlmostEqual(report.chosen_s, 0.735**0.85)
+        self.assertGreater(report.chosen_w, 0.1)
+        self.assertGreater(report.chosen_s, 0.75)
+
+    def test_wealth_exponent_must_be_concave(self) -> None:
+        with self.assertRaises(ValueError):
+            SVOUtilityFunction(wealth_exponent=1.0)
+
+    def test_sustainability_exponent_must_be_concave(self) -> None:
+        with self.assertRaises(ValueError):
+            SVOUtilityFunction(sustainability_exponent=1.0)
+
+    def test_sustainability_caps_regeneration_at_capacity(self) -> None:
+        observation = AgentObservation(
+            round_number=0,
+            environment=EnvironmentSnapshot(
+                round_number=0,
+                available_resources=99.0,
+                maximum_capacity=100.0,
+                regeneration_rate=10.0,
             ),
         )
-
-        result = utility.evaluate(
-            observation=self.observation,
-            action=self.action,
-            state=self.state,
-            character=character,
+        report = SVOUtilityFunction().evaluate_report(
+            observation,
+            AgentAction(extraction_amount=0.0),
+            self.state,
+            Character.cooperative(),
         )
+        self.assertAlmostEqual(report.chosen_s, 1.0)
 
-        self.assertEqual(result, 12.0)
-        self.assertEqual(gain.calls, 1)
-
-    def test_evaluate_candidates_returns_ordered_reports(self) -> None:
-        utility = LinearUtilityFunction()
-
-        reports = utility.evaluate_candidates(
-            observation=self.observation,
-            candidate_extraction_amounts=[0, 2, 4],
-            state=self.state,
-            character=self.character,
+    def test_evaluate_candidates_preserves_action_order(self) -> None:
+        reports = SVOUtilityFunction().evaluate_candidates(
+            self.observation,
+            [0.0, 5.0, 10.0],
+            self.state,
+            Character.cooperative(),
         )
-
         self.assertEqual(
             [report.action.extraction_amount for report in reports],
-            [0, 2, 4],
+            [0.0, 5.0, 10.0],
         )
-        for report in reports:
-            self.assertEqual(
-                report.total_utility,
-                (
-                    self.character.utility_weights.gain * report.gain
-                    + self.character.utility_weights.sustainability
-                    * report.sustainability
-                    - self.character.utility_weights.risk * report.risk
-                ),
-            )
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ from .simulation_config import (
 DEFAULT_ENVIRONMENT = EnvironmentConfig(
     initial_resources=1000.0,
     maximum_capacity=1000.0,
-    regeneration_rate=0.05,
+    regeneration_rate=2.0,
     rounds=100,
 )
 

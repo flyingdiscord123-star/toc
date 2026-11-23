@@ -8,7 +8,6 @@ from agents.action import AgentAction
 from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
-from agents.utility_weights import UtilityWeights
 
 
 class UtilityFunction(ABC):
@@ -43,7 +42,7 @@ class PlaceholderUtilityFunction(UtilityFunction):
         )
 
 
-from .aggregator import LinearUtilityFunction
+from .aggregator import LinearUtilityFunction, SVOUtilityFunction
 
 
 class SimpleUtilityFunction(LinearUtilityFunction):
@@ -66,6 +65,7 @@ __all__ = [
     "LinearUtilityFunction",
     "PlaceholderUtilityFunction",
     "RiskComponent",
+    "SVOUtilityFunction",
     "SimpleUtilityFunction",
     "SustainabilityComponent",
     "TrustComponent",

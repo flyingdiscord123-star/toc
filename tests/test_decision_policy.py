@@ -112,11 +112,11 @@ class UtilityMaximizationPolicyTests(unittest.TestCase):
         utilities = [utility for _, utility in ranked]
         self.assertEqual(utilities, sorted(utilities, reverse=True))
         self.assertEqual(ranked[0][0].extraction_amount, 4.0)
-        self.assertEqual(self.utility.calls, 5)
+        self.assertEqual(self.utility.calls, 41)
 
     def test_top_k_is_ceil_of_half_the_candidate_space(self) -> None:
         self.assertEqual(UtilityMaximizationPolicy.top_k_size(5), 3)
-        self.assertEqual(UtilityMaximizationPolicy.top_k_size(21), 11)
+        self.assertEqual(UtilityMaximizationPolicy.top_k_size(41), 21)
 
     def test_exploration_never_selects_the_top_ranked_action(self) -> None:
         policy = UtilityMaximizationPolicy(
@@ -136,7 +136,7 @@ class UtilityMaximizationPolicyTests(unittest.TestCase):
         ]
 
         self.assertNotIn(4.0, chosen)
-        self.assertTrue(all(1.0 <= amount <= 3.0 for amount in chosen))
+        self.assertTrue(all(0.0 < amount < 4.0 for amount in chosen))
 
     def test_candidates_and_selected_actions_respect_the_quota(self) -> None:
         policy = UtilityMaximizationPolicy(
@@ -152,7 +152,7 @@ class UtilityMaximizationPolicyTests(unittest.TestCase):
 
         self.assertEqual(
             policy.candidate_extraction_amounts(),
-            [0.0, 1.0, 2.0, 3.0, 3.5],
+            [3.5 * index / 40 for index in range(41)],
         )
         chosen = policy.decide(
             observation,
@@ -161,6 +161,152 @@ class UtilityMaximizationPolicyTests(unittest.TestCase):
             self.utility,
         )
         self.assertLessEqual(chosen.extraction_amount, 3.5)
+
+    def test_per_capita_harvest_limit_uses_population_and_reserve(self) -> None:
+        policy = UtilityMaximizationPolicy(
+            quota_limit=None,
+            num_agents=4,
+            harvest_fraction=0.5,
+            reserve_fraction=0.05,
+            num_candidates=41,
+        )
+        candidates = policy.candidate_extraction_amounts(
+            available_stock=100.0,
+            maximum_capacity=100.0,
+        )
+        self.assertEqual(len(candidates), 41)
+        self.assertAlmostEqual(candidates[0], 0.0)
+        self.assertAlmostEqual(candidates[-1], 11.875)
+        self.assertAlmostEqual(candidates[1], 11.875 / 40)
+
+    def test_candidate_count_must_allow_smooth_interior_actions(self) -> None:
+        with self.assertRaises(ValueError):
+            UtilityMaximizationPolicy(num_candidates=10)
+
+    def test_profiles_choose_ordered_positive_harvests_at_stock_levels(self) -> None:
+        utility = LinearUtilityFunction()
+        policy = UtilityMaximizationPolicy(
+            DecisionConfig(exploration_probability=0.0),
+            quota_limit=None,
+            num_agents=100,
+        )
+        characters = (
+            Character.greedy(),
+            Character.cooperative(),
+            Character.risk_averse(),
+        )
+
+        for stock in (1000.0, 750.0, 500.0):
+            observation = AgentObservation(
+                round_number=0,
+                environment=EnvironmentSnapshot(
+                    round_number=0,
+                    available_resources=stock,
+                    maximum_capacity=1000.0,
+                    regeneration_rate=0.0,
+                ),
+            )
+            harvests = [
+                policy.decide(
+                    observation,
+                    self.state,
+                    character,
+                    utility,
+                ).extraction_amount
+                for character in characters
+            ]
+
+            self.assertGreater(harvests[0], harvests[1])
+            self.assertGreater(harvests[1], harvests[2])
+            self.assertGreater(harvests[2], 0.0)
+            self.assertLess(
+                harvests[1],
+                policy.candidate_extraction_amounts(stock, 1000.0)[-1],
+            )
+            self.assertLess(harvests[2], harvests[1])
+
+    def test_simulations_produce_distinct_trajectories_by_population_mix(self) -> None:
+        config = SimulationConfig(
+            environment=EnvironmentConfig(100.0, 100.0, 0.0, 50),
+            network=NetworkConfig(NetworkTopology.COMPLETE, random_seed=8),
+            agents=AgentConfig(10, 100.0, 0.0, 0.0),
+            governance=GovernanceConfig(quota_limit=100.0),
+            learning=LearningConfig(
+                learning_algorithm=LearningAlgorithm.NO_LEARNING,
+            ),
+            decision=DecisionConfig(exploration_probability=0.0),
+        )
+
+        def result_for_mix(
+            greedy: float,
+            cooperative: float,
+            risk_averse: float,
+        ):
+            mixed_config = SimulationConfig(
+                environment=config.environment,
+                network=config.network,
+                agents=AgentConfig(
+                    10,
+                    greedy,
+                    cooperative,
+                    risk_averse,
+                ),
+                governance=config.governance,
+                learning=config.learning,
+                decision=config.decision,
+            )
+            simulation = Simulation(mixed_config)
+            simulation.initialize()
+            return simulation.run()
+
+        results = (
+            result_for_mix(100.0, 0.0, 0.0),
+            result_for_mix(0.0, 100.0, 0.0),
+            result_for_mix(0.0, 0.0, 100.0),
+            result_for_mix(50.0, 30.0, 20.0),
+        )
+        trajectories = [
+            tuple(metric.resource_level for metric in result.metrics_history)
+            for result in results
+        ]
+        self.assertEqual(len(set(trajectories)), 4)
+        self.assertGreater(
+            results[0].metrics_history[9].average_harvest_greedy,
+            results[2].metrics_history[9].average_harvest_risk_averse,
+        )
+        self.assertGreater(
+            results[1].metrics_history[19].average_harvest_cooperative,
+            results[2].metrics_history[19].average_harvest_risk_averse,
+        )
+        self.assertLess(results[0].final_resource_level, 15.0)
+        self.assertGreater(results[1].final_resource_level, 80.0)
+        self.assertLess(results[1].final_resource_level, 90.0)
+        self.assertGreater(results[2].final_resource_level, 90.0)
+        self.assertLess(results[2].final_resource_level, 100.0)
+
+    def test_exploration_does_not_push_sustainable_profiles_to_collapse(self) -> None:
+        for shares in ((0.0, 100.0, 0.0), (0.0, 0.0, 100.0)):
+            config = SimulationConfig(
+                environment=EnvironmentConfig(100.0, 100.0, 0.0, 100),
+                network=NetworkConfig(
+                    NetworkTopology.COMPLETE,
+                    random_seed=42,
+                ),
+                agents=AgentConfig(10, *shares),
+                governance=GovernanceConfig(quota_limit=100.0),
+                learning=LearningConfig(
+                    learning_algorithm=LearningAlgorithm.NO_LEARNING,
+                ),
+                decision=DecisionConfig(exploration_probability=1.0),
+            )
+            simulation = Simulation(config)
+            simulation.initialize()
+            result = simulation.run()
+
+            self.assertGreater(
+                min(metric.resource_level for metric in result.metrics_history),
+                12.0,
+            )
 
     def test_seeded_simulations_record_harvest_metrics_reproducibly(self) -> None:
         config = SimulationConfig(

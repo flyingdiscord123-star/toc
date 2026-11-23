@@ -1,8 +1,9 @@
-"""Linear aggregation of modular utility components."""
+"""Pure two-component SVO utility evaluation."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import math
+from dataclasses import dataclass
 from collections.abc import Iterable
 
 from agents.action import AgentAction
@@ -10,24 +11,24 @@ from agents.character import Character
 from agents.observation import AgentObservation
 from agents.state import AgentState
 
-from .component import UtilityComponent
 from . import UtilityFunction
-from .context import UtilityContext
-from .gain import GainComponent
-from .risk import RiskComponent
 from .report import UtilityEvaluation
-from .sustainability import SustainabilityComponent
 
 
 @dataclass(slots=True)
-class LinearUtilityFunction(UtilityFunction):
-    """Aggregate gain, sustainability, and risk using character weights."""
+class SVOUtilityFunction(UtilityFunction):
+    """Evaluate capacity-normalized wealth and concave sustainability."""
 
-    gain: UtilityComponent = field(default_factory=GainComponent)
-    sustainability: UtilityComponent = field(
-        default_factory=SustainabilityComponent
-    )
-    risk: UtilityComponent = field(default_factory=RiskComponent)
+    sustainability_exponent: float = 0.85
+    wealth_exponent: float = 0.92
+
+    def __post_init__(self) -> None:
+        if not 0.0 < self.wealth_exponent < 1.0:
+            raise ValueError("wealth_exponent must be between 0 and 1.")
+        if not 0.0 < self.sustainability_exponent < 1.0:
+            raise ValueError(
+                "sustainability_exponent must be between 0 and 1."
+            )
 
     def evaluate(
         self,
@@ -36,12 +37,12 @@ class LinearUtilityFunction(UtilityFunction):
         state: AgentState,
         character: Character,
     ) -> float:
-        """Return the weighted utility for a candidate action."""
-        return self._evaluate_context(
-            observation=observation,
-            action=action,
-            state=state,
-            character=character,
+        """Return the two-component utility for one candidate action."""
+        return self.evaluate_report(
+            observation,
+            action,
+            state,
+            character,
         ).total_utility
 
     def evaluate_report(
@@ -51,12 +52,47 @@ class LinearUtilityFunction(UtilityFunction):
         state: AgentState,
         character: Character,
     ) -> UtilityEvaluation:
-        """Return the component breakdown for one candidate action."""
-        return self._evaluate_context(
-            observation=observation,
+        """Return normalized component values and their weighted utility."""
+        _ = state
+        environment = observation.environment
+        if environment.maximum_capacity <= 0.0:
+            raise ValueError("maximum_capacity must be positive.")
+        if not 0.0 < self.wealth_exponent < 1.0:
+            raise ValueError("wealth_exponent must be between 0 and 1.")
+        if not 0.0 < self.sustainability_exponent < 1.0:
+            raise ValueError(
+                "sustainability_exponent must be between 0 and 1."
+            )
+        capacity = environment.maximum_capacity
+        current_stock = max(environment.available_resources, 0.0)
+        feasible_extraction = min(
+            max(action.extraction_amount, 0.0),
+            current_stock,
+        )
+        wealth_fraction = min(feasible_extraction / capacity, 1.0)
+        chosen_w = math.pow(wealth_fraction, self.wealth_exponent)
+
+        post_extraction_stock = current_stock - feasible_extraction
+        projected_next_stock = post_extraction_stock * (
+            1.0 + environment.regeneration_rate / 100.0
+        )
+        stock_fraction = min(
+            max(projected_next_stock, 0.0),
+            capacity,
+        ) / capacity
+        chosen_s = math.pow(stock_fraction, self.sustainability_exponent)
+        wealth_weight, sustainability_weight = character.effective_weights
+        total_utility = (
+            wealth_weight * chosen_w
+            + sustainability_weight * chosen_s
+        )
+        return UtilityEvaluation(
             action=action,
-            state=state,
-            character=character,
+            chosen_w=chosen_w,
+            chosen_s=chosen_s,
+            wealth_weight=wealth_weight,
+            sustainability_weight=sustainability_weight,
+            total_utility=total_utility,
         )
 
     def evaluate_candidates(
@@ -66,47 +102,16 @@ class LinearUtilityFunction(UtilityFunction):
         state: AgentState,
         character: Character,
     ) -> list[UtilityEvaluation]:
-        """Return component reports in the order of candidate actions."""
+        """Return evaluation reports in candidate-action order."""
         return [
-            self._evaluate_context(
+            self.evaluate_report(
                 observation=observation,
-                action=AgentAction(
-                    extraction_amount=extraction_amount
-                ),
+                action=AgentAction(extraction_amount=amount),
                 state=state,
                 character=character,
             )
-            for extraction_amount in candidate_extraction_amounts
+            for amount in candidate_extraction_amounts
         ]
 
-    def _evaluate_context(
-        self,
-        observation: AgentObservation,
-        action: AgentAction,
-        state: AgentState,
-        character: Character,
-    ) -> UtilityEvaluation:
-        """Evaluate all three components for one immutable context."""
-        context = UtilityContext(
-            observation=observation,
-            action=action,
-            state=state,
-            character=character,
-        )
-        weights = context.character.utility_weights
-        gain_score = self.gain.evaluate(context)
-        sustainability_score = self.sustainability.evaluate(context)
-        risk_score = self.risk.evaluate(context)
 
-        total_utility = (
-            weights.gain * gain_score
-            + weights.sustainability * sustainability_score
-            - weights.risk * risk_score
-        )
-        return UtilityEvaluation(
-            action=context.action,
-            gain=gain_score,
-            sustainability=sustainability_score,
-            risk=risk_score,
-            total_utility=total_utility,
-        )
+LinearUtilityFunction = SVOUtilityFunction

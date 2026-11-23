@@ -40,6 +40,9 @@ class EnvironmentSnapshot:
 
     available_resources:
         Quantity of resources currently available.
+
+    regeneration_rate:
+        Percentage of post-harvest stock regenerated each round.
     """
 
     round_number: int
