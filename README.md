@@ -13,7 +13,7 @@ The simulator has been designed from the ground up to be modular, allowing indiv
 
 # Research Motivation
 
-Many real-world commons problems—groundwater extraction, fisheries, forests, carbon emissions, cloud computing resources—are governed through externally imposed regulations such as taxes, quotas, fines, or subsidies.
+Many real-world commons problems—groundwater extraction, fisheries, forests, carbon emissions, cloud computing resources—are governed through externally imposed regulations such as quotas, fines, or subsidies.
 
 This project asks:
 
@@ -300,8 +300,6 @@ Current implementation supports quota-based regulation.
 
 Future governance mechanisms include:
 
-- Resource taxation
-- Progressive taxation
 - Fines for over-extraction
 - Subsidies for cooperative behaviour
 - Adaptive quota systems

@@ -14,7 +14,6 @@ class EconomicOutcomeTests(unittest.TestCase):
             requested_extraction=10.0,
             approved_extraction=10.0,
             net_resources_received=10.0,
-            tax_paid=0.0,
             subsidy_received=0.0,
             compliant=True,
             violation_reason=None,
@@ -30,7 +29,6 @@ class EconomicOutcomeTests(unittest.TestCase):
     def test_outcome_is_immutable(self) -> None:
         outcome = EconomicOutcome(
             gross_income=10.0,
-            tax_paid=0.0,
             net_income=10.0,
         )
 

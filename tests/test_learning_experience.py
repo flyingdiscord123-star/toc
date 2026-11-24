@@ -30,7 +30,6 @@ class LearningExperienceTests(unittest.TestCase):
             chosen_action=AgentAction(extraction_amount=10.0),
             economic_outcome=EconomicOutcome(
                 gross_income=10.0,
-                tax_paid=0.0,
                 net_income=10.0,
             ),
             utility_component_scores=(("wealth", 1.0),),

@@ -38,7 +38,7 @@ export function SimulationForm({ config, running, onChange, onRun }: Props) {
   const reset = () => onChange({
     agents: { numAgents: 100, greedyPercentage: 50, cooperativePercentage: 30, riskAversePercentage: 20 },
     environment: { initialResources: 1000, regenerationRate: 2, rounds: 50 },
-    governance: { quotaEnabled: true, quotaLimit: 20, taxEnabled: false, taxRate: 0 },
+    governance: { quotaEnabled: true, quotaLimit: 20 },
     explorationProbability: 0.25,
   });
   return (
@@ -60,13 +60,12 @@ export function SimulationForm({ config, running, onChange, onRun }: Props) {
         <div className="space-y-6">
           <Slider label="Initial resource" value={config.environment.initialResources} min={100} max={5000} step={50} onChange={(value) => onChange({ ...config, environment: { ...config.environment, initialResources: value } })} />
           <Slider label="Regeneration rate (% of current stock per round)" value={config.environment.regenerationRate} min={0} max={10} step={0.5} suffix="%" onChange={(value) => onChange({ ...config, environment: { ...config.environment, regenerationRate: value } })} />
-          <Slider label="Simulation rounds" value={config.environment.rounds} min={1} max={50} onChange={(value) => onChange({ ...config, environment: { ...config.environment, rounds: value } })} />
+          <Slider label="Simulation rounds" value={config.environment.rounds} min={0} max={100} onChange={(value) => onChange({ ...config, environment: { ...config.environment, rounds: value } })} />
         </div>
       </SectionCard>
       <SectionCard eyebrow="03 / Governance" title="Institutional controls" description="Governance is exogenous and fixed before a run begins.">
         <div className="space-y-6">
           <Slider label="Quota limit" value={config.governance.quotaLimit} min={0} max={100} step={1} onChange={(value) => onChange({ ...config, governance: { ...config.governance, quotaLimit: value } })} />
-          <Slider label="Tax rate" value={config.governance.taxRate} min={0} max={30} step={1} suffix="%" onChange={(value) => onChange({ ...config, governance: { ...config.governance, taxRate: value } })} />
         </div>
       </SectionCard>
       <SectionCard eyebrow="04 / Decision policy" title="Controlled exploration" description="Sometimes choose a high-utility alternative instead of the top-ranked harvest.">

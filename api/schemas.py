@@ -19,14 +19,12 @@ class EnvironmentSettings(BaseModel):
 		ge=0,
 		description="Percentage of post-harvest stock regenerated each round.",
 	)
-	rounds: int = Field(gt=0)
+	rounds: int = Field(ge=0, le=100)
 
 
 class GovernanceSettings(BaseModel):
 	quota_enabled: bool = Field(alias="quotaEnabled")
 	quota_limit: float = Field(alias="quotaLimit", ge=0, le=100)
-	tax_enabled: bool = Field(alias="taxEnabled")
-	tax_rate: float = Field(alias="taxRate", ge=0, le=1)
 
 
 class SimulationRequest(BaseModel):

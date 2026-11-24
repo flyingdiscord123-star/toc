@@ -45,7 +45,6 @@ class AgentExperience:
             - reward
             - utility
             - extracted resources
-            - taxes paid
             - penalties
             - trust updates
 

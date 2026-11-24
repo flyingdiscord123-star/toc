@@ -35,24 +35,9 @@ class FlatEconomicModelTests(unittest.TestCase):
             outcome,
             EconomicOutcome(
                 gross_income=10.0,
-                tax_paid=0.0,
                 net_income=10.0,
             ),
         )
-
-    def test_tax_is_deterministic(self) -> None:
-        outcome = FlatEconomicModel().evaluate(
-            observation=self.observation,
-            action=AgentAction(extraction_amount=25.0),
-            governance_config=GovernanceConfig(
-                tax_enabled=True,
-                tax_rate=0.2,
-            ),
-        )
-
-        self.assertEqual(outcome.gross_income, 25.0)
-        self.assertEqual(outcome.tax_paid, 5.0)
-        self.assertEqual(outcome.net_income, 20.0)
 
 
 if __name__ == "__main__":

@@ -83,8 +83,8 @@ class EnvironmentConfig:
                 "regeneration_rate percentage cannot be negative."
             )
 
-        if self.rounds <= 0:
-            raise ValueError("rounds must be positive.")
+        if not 0 <= self.rounds <= 100:
+            raise ValueError("rounds must be between 0 and 100.")
         if not 0.0 <= self.harvest_fraction <= 1.0:
             raise ValueError("harvest_fraction must be between 0 and 1.")
         if not 0.0 <= self.reserve_fraction <= 1.0:
@@ -184,14 +184,6 @@ class QuotaConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class TaxConfig:
-    """Researcher-selected tax settings reserved for future governance."""
-
-    enabled: bool = False
-    rate: float = 0.0
-
-
-@dataclass(frozen=True, slots=True)
 class SubsidyConfig:
     """Researcher-selected subsidy settings reserved for future governance."""
 
@@ -213,14 +205,10 @@ class GovernanceConfig:
     enabled_rules: List[str] = field(default_factory=list)
     quota_enabled: bool = True
     quota_limit: float = 20.0
-    tax_enabled: bool = False
-    tax_rate: float = 0.0
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.quota_limit <= 100.0:
             raise ValueError("quota_limit must be between 0 and 100.")
-        if not 0.0 <= self.tax_rate <= 1.0:
-            raise ValueError("tax_rate must be between 0 and 1.")
 
 
 # ==========================================================

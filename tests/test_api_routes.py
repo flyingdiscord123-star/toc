@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
+from pydantic import ValidationError
 
 from api.routes import run_simulation
 from api.schemas import SimulationRequest
@@ -12,6 +13,41 @@ from config.simulation_config import LearningAlgorithm
 
 
 class SimulationRouteTests(unittest.TestCase):
+    def test_rounds_accept_zero_and_reject_over_one_hundred(self) -> None:
+        common = {
+            "agents": {
+                "numAgents": 1,
+                "greedyPercentage": 0.0,
+                "cooperativePercentage": 100.0,
+                "riskAversePercentage": 0.0,
+            },
+            "governance": {
+                "quotaEnabled": True,
+                "quotaLimit": 20.0,
+            },
+            "explorationProbability": 0.0,
+        }
+
+        zero_rounds = SimulationRequest(
+            environment={
+                "initialResources": 100.0,
+                "regenerationRate": 2.0,
+                "rounds": 0,
+            },
+            **common,
+        )
+        self.assertEqual(zero_rounds.environment.rounds, 0)
+
+        with self.assertRaises(ValidationError):
+            SimulationRequest(
+                environment={
+                    "initialResources": 100.0,
+                    "regenerationRate": 2.0,
+                    "rounds": 101,
+                },
+                **common,
+            )
+
     def test_api_enables_svo_gradient_learning_with_default_parameters(self) -> None:
         request = SimulationRequest(
             agents={
@@ -28,8 +64,6 @@ class SimulationRouteTests(unittest.TestCase):
             governance={
                 "quotaEnabled": True,
                 "quotaLimit": 20.0,
-                "taxEnabled": False,
-                "taxRate": 0.0,
             },
             explorationProbability=0.0,
         )

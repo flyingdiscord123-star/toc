@@ -11,7 +11,7 @@ from .economic_outcome import EconomicOutcome
 
 
 class FlatEconomicModel(EconomicModel):
-    """Apply the configured flat tax to candidate extraction income."""
+    """Return the candidate extraction income as economic outcome."""
 
     def evaluate(
         self,
@@ -22,12 +22,5 @@ class FlatEconomicModel(EconomicModel):
         """Return deterministic gross, cost, and net income values."""
         _ = observation
         gross_income = action.extraction_amount
-        tax_paid = (
-            governance_config.tax_rate * gross_income
-            if governance_config.tax_enabled
-            else 0.0
-        )
-        return EconomicOutcome.create(
-            gross_income=gross_income,
-            tax_paid=tax_paid,
-        )
+        _ = governance_config
+        return EconomicOutcome.create(gross_income=gross_income)

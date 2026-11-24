@@ -12,7 +12,6 @@ class ActionOutcome:
     requested_extraction: float
     approved_extraction: float
     net_resources_received: float
-    tax_paid: float
     subsidy_received: float
     compliant: bool
     violation_reason: str | None

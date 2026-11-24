@@ -13,6 +13,6 @@ class ComplianceComponent(UtilityComponent):
         self,
         context: UtilityContext,
     ) -> float:
-        """Return 1.0 until governance penalties and taxes are modeled."""
+        """Return 1.0 until governance penalties are modeled."""
         _ = context
         return 1.0

@@ -13,8 +13,6 @@ export interface SimulationConfig {
   governance: {
     quotaEnabled: boolean;
     quotaLimit: number;
-    taxEnabled: boolean;
-    taxRate: number;
   };
   explorationProbability: number;
 }

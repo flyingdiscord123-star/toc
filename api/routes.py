@@ -61,8 +61,6 @@ def run_simulation(request: SimulationRequest) -> dict[str, object]:
 		governance=GovernanceConfig(
 			quota_enabled=governance.quota_enabled,
 			quota_limit=governance.quota_limit,
-			tax_enabled=governance.tax_enabled,
-			tax_rate=governance.tax_rate,
 		),
 		learning=LearningConfig(
 			learning_algorithm=LearningAlgorithm.SVO_GRADIENT,
